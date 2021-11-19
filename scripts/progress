@@ -1,0 +1,10 @@
+#!/bin/bash
+
+c=3316
+while true; do
+  scammed=$(ls -l data/dynamite | wc -l)
+  dynamites=$(find data/dynamite -name '*.png' | wc -l)
+  echo "scammed $scammed of $c replays, found $dynamites dynamites"
+  sleep 3
+done
+

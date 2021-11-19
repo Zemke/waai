@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+
+for f in replay/*; do
+  t=$(echo $f | grep -o "...$")
+  id=$(echo $f | grep -o '[0-9]*')
+  echo "${f}, ${t}, $id"
+  mkdir -p "xtract/$id"
+  if [ $t == "zip" ]; then
+    unzip "$f" -d "xtract/$id/"
+  elif [ $t == "rar" ]; then
+    unrar e "$f" "xtract/$id/"
+  else
+    echo "neither one nor the other"
+  fi
+done;
+
