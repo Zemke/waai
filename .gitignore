@@ -1,5 +1,4 @@
 dataset/pos/*.png
 dataset/neg/*.png
-dataset/neg/*.csv
-dataset.zip
+dataset/annot.csv
 
