@@ -2,6 +2,9 @@
 
 import torch
 from torch import nn
+from torchvision.transforms import Compose, ToTensor, Normalize, Resize
+
+from tqdm import trange
 import numpy as np
 
 
@@ -29,7 +32,7 @@ def train(net, dataloader):
 
   step = 11
   losses, acc = [], []
-  for epoch in range(8):  # TODO 12
+  for epoch in trange(12):
     running_loss, running_acc = 0., 0.
     for i, (b, l) in enumerate(dataloader):
       net.train()
@@ -56,19 +59,25 @@ def train(net, dataloader):
   return losses, acc
 
 
-def eval(net, imgs, transforms):
-  total = len(imgs)
-  rr = []
+def eval(net, imgs):
+  res = []
   with torch.no_grad():
-    for i in range(len(imgs)):
+    for i in trange(len(imgs), leave=False):
       net.eval()
-      r = net(transforms(imgs[i]).unsqueeze(0))
-      rr.append(r)
-      if i % 100 == 0:
-        print(f'{(i+1)/total*100:.0f}%', end='\r')
-  print("100%", end='\r')
-  print()
-  return rr
+
+      # standardize
+      norm_img = Compose([ToTensor(), Resize((25,25)),])(imgs[i])
+      try:
+        std, mean = torch.std_mean(norm_img.unsqueeze(0), (0,2,3))
+        std = torch.maximum(std, torch.full((3,), .0001))
+        norm_img = Normalize(std=std, mean=std)(norm_img)
+      except ValueError as e:  # std is 0
+        p5 = torch.full((3,), .5)
+        norm_img = Normalize(std=p5, mean=p5)(norm_img)
+
+      r = net(norm_img.unsqueeze(0))
+      res.append(r.squeeze().item())
+  return res
 
 
 def save(net, path):

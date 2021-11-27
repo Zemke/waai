@@ -2,8 +2,8 @@
 
 import os
 import torch
-from torch.utils.data import Dataset
-from torchvision.transforms import Normalize
+from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import Compose, ToTensor, Normalize, Resize
 from PIL import Image
 import pandas as pd
 
@@ -28,7 +28,6 @@ class DynaSet(Dataset):
           standardized=True)
       std, mean = torch.std_mean(
           torch.stack([i[0] for i in stdz]), (0,2,3))
-      del stdz  # free memory
       self.transform.transforms.append(Normalize(std=std, mean=mean))
 
     
