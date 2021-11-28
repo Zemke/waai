@@ -32,7 +32,7 @@ def train(net, dataloader):
 
   step = 11
   losses, acc = [], []
-  for epoch in trange(12):
+  for epoch in range(12):
     running_loss, running_acc = 0., 0.
     for i, (b, l) in enumerate(dataloader):
       net.train()
