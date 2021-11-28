@@ -8,6 +8,9 @@ from tqdm import trange
 import numpy as np
 
 
+STEP = 11
+
+
 class DynaNet(nn.Module):
   def __init__(self):
     super().__init__()
@@ -26,37 +29,58 @@ class DynaNet(nn.Module):
     return x
 
 
-def train(net, dataloader):
+def forward(net, dataloader, train=False):
   optim = torch.optim.Adam(net.parameters(), lr=1e-5)
   loss_fn = nn.BCEWithLogitsLoss()
 
-  step = 11
-  losses, acc = [], []
-  for epoch in range(12):
-    running_loss, running_acc = 0., 0.
+  running_loss, running_acc = 0., 0.
+  losses, accs = [], []
+  for epoch in range(5 if train else 1):
     for i, (b, l) in enumerate(dataloader):
-      net.train()
-      optim.zero_grad()
+      net.train(train)
+      if train:
+        optim.zero_grad()
+
       y = net(b)
-      loss = loss_fn(y.squeeze(), l)
-      loss.backward()
-      optim.step()
+      loss = loss_fn(y.view(-1), l)
 
-      # loss and accuracy
-      running_loss += loss.item()
-      y_sigmoid = nn.Sigmoid()(torch.squeeze(y))
-      stck = torch.stack((l, y_sigmoid), 1).detach().numpy()
-      stck = np.diff(stck).squeeze() - 1
+      if train:
+        loss.backward()
+        optim.step()
+
+      # accuracy
+      y_sigmoid = nn.Sigmoid()(y.squeeze())
+      stck = torch.stack((l, y_sigmoid.view(-1)), 1).detach().numpy()
+      stck = np.diff(stck).reshape(-1) - 1
       stck[stck < -1] += 2
-      running_acc += np.abs(stck).sum() / 4
+      acc = np.abs(stck).sum() / len(b)
 
-      if i % step == step-1:
-        losses.append(running_loss/step)
-        acc.append(running_acc/step)
-        print(f"{epoch:02}/{i:03} loss:{losses[-1]:.4f} acc:{acc[-1]:.2f}")
+      running_loss += loss.item()
+      running_acc += acc
+      log=False
+
+      if i % STEP == STEP-1:
+        losses.append(running_loss/STEP)
+        accs.append(running_acc/STEP)
+        log=True
+      elif len(dataloader) == i+1:
+        losses.append(running_loss/((i+1)%STEP))
+        accs.append(running_acc/((i+1)%STEP))
+        log=True
+
+      if log:
+        print(f"epoch{epoch:02} i{i+1:03} loss:{losses[-1]:.4f} acc:{accs[-1]:.4f}")
         running_loss, running_acc = 0., 0.
 
-  return losses, acc
+  return losses, accs
+
+
+def train(net, dataloader):
+  return forward(net, dataloader, True)
+
+
+def valid(net, dataloader):
+  return forward(net, dataloader)
 
 
 def eval(net, imgs):

@@ -3,8 +3,8 @@
 import os
 
 import numpy as np
-
 import matplotlib.pyplot as plt
+
 import cv2
 from PIL import Image
 
@@ -42,10 +42,23 @@ def topprob(aa, rr, prob=.5):
   return res, sargs[:len(res)]
 
 
-def plt_train(loss, acc):
-  plt.figure(figsize=(10,10))
-  plt.plot(loss)
-  plt.plot(acc)
+def plt_res(trainres, validres):
+  trainloss, trainacc = trainres
+  validloss, validacc = validres
+
+  trainax = plt.subplot(211)
+  trainax.set_title('train')
+  plt.plot(trainloss, label='loss')
+  plt.plot(trainacc, label='acc')
+
+  validax = plt.subplot(212)
+  validax.set_title(f'valid')
+  meanloss = (np.mean(validloss)*100).round(4)
+  meanacc = (np.mean(validacc)*100).round(4)
+  plt.plot(validloss, label=f'loss m={meanloss}')
+  plt.plot(validacc, label=f'acc m={meanacc}')
+
+  plt.legend()
   plt.show()
 
 

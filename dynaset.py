@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 import os
+from math import ceil, floor
+
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.transforms import Compose, ToTensor, Normalize, Resize
+
 from PIL import Image
 import pandas as pd
 
@@ -12,19 +15,14 @@ class DynaSet(Dataset):
   def __init__(self,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset',
-               transform=None,
-               target_transform=float,
                standardized=False):
     self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
-    self.transform = transform
-    self.target_transform = target_transform
+    self.transform = Compose([ToTensor(), Resize((25,25))])
     if not standardized:
       stdz = DynaSet(
           annotations_file=annotations_file,
           img_dir=img_dir,
-          transform=transform,
-          target_transform=target_transform,
           standardized=True)
       std, mean = torch.std_mean(
           torch.stack([i[0] for i in stdz]), (0,2,3))
@@ -41,13 +39,15 @@ class DynaSet(Dataset):
     label = self.img_labels.iloc[idx, 1]
     if self.transform:
       image = self.transform(image)
-    if self.target_transform:
-      label = self.target_transform(label)
-    return image, label
+    return image, float(label)
 
 
-def load():
-  return DataLoader(
-    DynaSet(transform=Compose([ToTensor(), Resize((25,25))])),
-    batch_size=4, shuffle=True)
+def splitset(ds):
+  splits = [ceil(len(ds)*.9), floor(len(ds)*.1)]
+  train, test = random_split(ds, splits, torch.Generator().manual_seed(42))
+  return train, test
+
+
+def load(dataset, batch_size=4):
+  return DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
