@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd dataset
+echo "file,label" > annot.csv
+find pos/* | xargs -I% -n1 echo %,1 >> annot.csv
+find neg/* | xargs -I% -n1 echo %,0 >> annot.csv
+
+echo pos: $(find pos/* | wc -l)
+echo neg: $(find neg/* | wc -l)
+
