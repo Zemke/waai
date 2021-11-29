@@ -2,6 +2,7 @@
 
 import sys
 import os
+import select
 from time import time
 
 from tqdm import trange
