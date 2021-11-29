@@ -49,19 +49,20 @@ def plt_res(trainres, validres):
   trainloss, trainacc = trainres
   validloss, validacc = validres
 
-  trainax = plt.subplot(211)
-  trainax.set_title('train')
-  plt.plot(trainloss, label='loss')
-  plt.plot(trainacc, label='acc')
+  fig, (lossax, accax) = plt.subplots(2, 1, sharex=True)
 
-  validax = plt.subplot(212)
-  validax.set_title(f'valid')
-  meanloss = (np.mean(validloss)*100).round(4)
-  meanacc = (np.mean(validacc)*100).round(4)
-  plt.plot(validloss, label=f'loss m={meanloss}')
-  plt.plot(validacc, label=f'acc m={meanacc}')
+  lossax.set_title('loss')
+  lossax.plot(trainloss, '-o', label='train')
+  lossax.plot(validloss, '-o', label='valid')
+  lossax.legend()
 
-  plt.legend()
+  accax.set_title('acc')
+  accax.plot(trainacc, '-o', label='train')
+  accax.plot(validacc, '-o', label='valid')
+
+  accax.set_xlabel('epoch')
+  accax.legend()
+
   plt.show()
 
 

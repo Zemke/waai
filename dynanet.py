@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torchvision.transforms import Compose, ToTensor, Normalize, Resize
 
-from tqdm import trange
+from tqdm import trange, tqdm
 import numpy as np
 
 
@@ -29,15 +29,22 @@ class DynaNet(nn.Module):
     return x
 
 
-def forward(net, dataloader, train=False):
+def _do(net, dataloader, train=False):
   optim = torch.optim.Adam(net.parameters(), lr=1e-5)
   loss_fn = nn.BCEWithLogitsLoss()
 
-  running_loss, running_acc = 0., 0.
+  net.train(train)
+
   losses, accs = [], []
-  for epoch in range(5 if train else 1):
-    for i, (b, l) in enumerate(dataloader):
-      net.train(train)
+  epochs = 5
+  for epoch in range(epochs):
+    running_loss, running_acc = 0., 0.
+    progr = tqdm(dataloader,
+                 desc=f"{epoch+1:02}/{epochs:02}",
+                 colour='red' if train else 'green',
+                 postfix=dict(loss="na", acc="na",
+                              epoch=f"{epoch+1}/{epochs}"))
+    for i, (b, l) in enumerate(progr):
       if train:
         optim.zero_grad()
 
@@ -57,30 +64,22 @@ def forward(net, dataloader, train=False):
 
       running_loss += loss.item()
       running_acc += acc
-      log=False
+      progr.set_postfix(loss=f"{running_loss/(i+1):.4f}",
+                        acc=f"{running_acc/(i+1):.2f}")
 
-      if i % STEP == STEP-1:
-        losses.append(running_loss/STEP)
-        accs.append(running_acc/STEP)
-        log=True
-      elif len(dataloader) == i+1:
-        losses.append(running_loss/((i+1)%STEP))
-        accs.append(running_acc/((i+1)%STEP))
-        log=True
-
-      if log:
-        print(f"epoch{epoch:02} i{i+1:03} loss:{losses[-1]:.4f} acc:{accs[-1]:.4f}")
-        running_loss, running_acc = 0., 0.
+    losses.append(running_loss/len(dataloader))
+    accs.append(running_acc/len(dataloader))
 
   return losses, accs
 
 
 def train(net, dataloader):
-  return forward(net, dataloader, True)
+  return _do(net, dataloader, True)
 
 
 def valid(net, dataloader):
-  return forward(net, dataloader)
+  with torch.no_grad():
+    return _do(net, dataloader)
 
 
 def eval(net, imgs):
