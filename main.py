@@ -4,6 +4,7 @@ import sys
 import os
 import select
 from time import time
+import math
 
 from tqdm import trange
 
@@ -78,13 +79,14 @@ if __name__ == "__main__":
       if isinstance(topn, int):
         top, topargs = visual.topk(tiles, rr, topn)
       else:
-        top, topargs = visual.topprob(tiles, rr, topn)
+        top, topargs = visual.topprob(tiles, sidmoid(rr), topn)
       for i in range(len(top)):
         ts = round(time() * 1000000)
         score = round(rr[topargs[i]]*100)
         visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
   if fromstdin is not None:
-    from math import e
-    r = dynanet.eval(net, [fromstdin])[0]
-    print(1/(1+e**(-r)))  # sigmoid
+    print(sigmoid(dynanet.eval(net, [fromstdin])[0]))  # sigmoid
+
+def sigmoid(x):
+    return 1/(1+math.e**(-x))
 
