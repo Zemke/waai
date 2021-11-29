@@ -84,5 +84,7 @@ if __name__ == "__main__":
         score = round(rr[topargs[i]]*100)
         visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
   if fromstdin is not None:
-    print(dynanet.eval(net, [fromstdin])[0])
+    from math import e
+    r = dynanet.eval(net, [fromstdin])[0]
+    print(1/(1+e**(-r)))  # sigmoid
 
