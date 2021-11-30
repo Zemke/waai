@@ -134,7 +134,6 @@ def pred(net, img):
     norm_img = Normalize(std=p5, mean=p5)(norm_img)
 
   r = net(norm_img.unsqueeze(0))
-  print('it', r.squeeze().item())
   res.append(r.squeeze().item())
   return res
 

@@ -57,8 +57,9 @@ def load(dataset, batch_size=4, shuffle=True):
 
 class CaptureSet(Dataset):
   @torch.no_grad()
-  def __init__(self, img):
-    self.tiles = visual.tile(visual.load(img))
+  def __init__(self, path):
+    img = visual.load(path)[50:-75, 50:-50,:]
+    self.tiles = visual.tile(img)
     self.tensors = [ToTensor()(i) for i in self.tiles]
     std, mean = torch.std_mean(torch.stack(self.tensors), (0,2,3))
     self.norm = Normalize(std=std, mean=mean)
