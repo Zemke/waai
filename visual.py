@@ -45,22 +45,23 @@ def topprob(aa, rr, prob=.5):
   return res, sargs[:len(res)]
 
 
-def plt_res(trainres, validres):
+def plt_res(trainres, validres, epochs):
   trainloss, trainacc = trainres
   validloss, validacc = validres
 
   fig, (lossax, accax) = plt.subplots(2, 1, sharex=True)
 
-  lossax.set_title('loss')
-  lossax.plot(trainloss, '-o', label='train')
-  lossax.plot(validloss, '-o', label='valid')
+  ls = np.linspace(1, epochs, len(trainloss))
+
+  lossax.plot(ls, trainloss, label='loss train')
+  lossax.plot(ls, validloss, label='loss valid')
   lossax.legend()
 
-  accax.set_title('acc')
-  accax.plot(trainacc, '-o', label='train')
-  accax.plot(validacc, '-o', label='valid')
+  accax.plot(ls, trainacc, label='acc train')
+  accax.plot(ls, validacc, label='acc valid')
 
   accax.set_xlabel('epoch')
+
   accax.legend()
 
   plt.show()

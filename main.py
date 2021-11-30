@@ -58,9 +58,8 @@ if __name__ == "__main__":
   if not pt:
     net = dynanet.DynaNet()
     data = dynaset.load(dynaset.DynaSet())
-    trainres = dynanet.train(net, data)
-    validres = dynanet.valid(net, data)
-    visual.plt_res(trainres, validres)
+    trainres, validres = dynanet.train(net, data)
+    visual.plt_res(trainres, validres, dynanet.EPOCHS)
     loc = './dynanet.pt'
     print(f'overwrite model to {loc}? [y/N]', end=' ')
     ask = input().strip().lower()
