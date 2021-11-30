@@ -65,15 +65,15 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
     stepped = False
     step_mod = (i+1) % STEP
     if step_mod == 0:
-      losses.append(running_loss/STEP)
-      accs.append(running_acc/STEP)
+      divisor = STEP
       stepped = True
     elif len(dl) == (i+1):
-      losses.append(running_loss/step_mod)
-      accs.append(running_acc/step_mod)
+      divisor = step_mod
       stepped = True
 
     if stepped:
+      losses.append(running_loss/divisor)
+      accs.append(running_acc/divisor)
       running_loss, running_acc = 0., 0.
       if train:
         with torch.no_grad():
