@@ -13,6 +13,9 @@ import dynaset
 import visual
 
 
+def sigmoid(x):
+    return 1/(1+math.e**(-x))
+
 if __name__ == "__main__":
   fromstdin = None
   if select.select([sys.stdin, ], [], [], 0.0)[0]:
@@ -57,15 +60,26 @@ if __name__ == "__main__":
       sys.exit()
   if not pt:
     net = dynanet.DynaNet()
-    data = dynaset.load(dynaset.DynaSet())
-    trainres, validres = dynanet.train(net, data)
+    data = dynaset.DynaSet()
+    env_test = os.environ.get('TEST')
+    if env_test == '1':
+      print('test with split set')
+      ds_train, ds_test = dynaset.splitset(data)
+      dl_train, dl_test = dynaset.load(ds_train), dynaset.load(ds_test)
+    else:
+      dl_train, dl_test = dynaset.load(data), None
+    trainres, validres = dynanet.train(net, dl_train, dl_test)
     visual.plt_res(trainres, validres, dynanet.EPOCHS)
     loc = './dynanet.pt'
-    print(f'overwrite model to {loc}? [y/N]', end=' ')
-    ask = input().strip().lower()
-    if ask == 'y':
-      dynanet.save(net, loc)
-      print('saved')
+    if env_test:
+      print("saving model with test flag is not possible as it was \
+trained with only part of the dataset")
+    else:
+      print(f'overwrite model to {loc}? [y/N]', end=' ')
+      ask = input().strip().lower()
+      if ask == 'y':
+        dynanet.save(net, loc)
+        print('saved')
   if evalu:
     print('evaluating')
     for i in trange(len(imgs)):
@@ -85,7 +99,4 @@ if __name__ == "__main__":
         visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
   if fromstdin is not None:
     print(sigmoid(dynanet.eval(net, [fromstdin])[0]))  # sigmoid
-
-def sigmoid(x):
-    return 1/(1+math.e**(-x))
 

@@ -30,13 +30,15 @@ class DynaNet(nn.Module):
     return x
 
 
-def _do(net, dataloader, optim, loss_fn, train=False):
+def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
   net.train(train)
+  dl = dl_train if train else dl_valid
 
   losses, accs = [], []
+  losses_val, accs_val = [], []
   running_loss, running_acc = 0., 0.
-  progr = tqdm(dataloader,
-               position=0,
+  progr = tqdm(dl,
+               leave=train,
                colour='yellow' if train else 'green',
                postfix=dict(loss="na", acc="na"))
   for i, (b, l) in enumerate(progr):
@@ -66,19 +68,29 @@ def _do(net, dataloader, optim, loss_fn, train=False):
       losses.append(running_loss/STEP)
       accs.append(running_acc/STEP)
       stepped = True
-    elif len(dataloader) == (i+1):
+    elif len(dl) == (i+1):
       losses.append(running_loss/step_mod)
       accs.append(running_acc/step_mod)
       stepped = True
 
     if stepped:
       running_loss, running_acc = 0., 0.
-      progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
+      if train:
+        with torch.no_grad():
+          validres = _do(net, dl_train, dl_valid, loss_fn, None)
+          losses_val.append(sum(validres[0])/len(validres[0]))
+          accs_val.append(sum(validres[1])/len(validres[1]))
+        progr.set_postfix(
+            loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
+            val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
 
-  return losses, accs
+  if train:
+    return (losses, accs), (losses_val, accs_val)
+  else:
+    return losses, accs
 
 
-def train(net, dataloader, validate=True):
+def train(net, dl_train, dl_valid=None):
   optim = torch.optim.Adam(net.parameters(), lr=1e-5)
   loss_fn = nn.BCEWithLogitsLoss()
 
@@ -86,14 +98,12 @@ def train(net, dataloader, validate=True):
   validloss, validacc = [], []
   for epoch in range(EPOCHS):
     print(f"{epoch+1:02} of {EPOCHS:02}")
-    trainres = _do(net, dataloader, optim, loss_fn, True)
+    trainres, validres = \
+        _do(net, dl_train, dl_valid or dl_train, loss_fn, optim, True)
     trainloss.extend(trainres[0])
     trainacc.extend(trainres[1])
-    if validate:
-      with torch.no_grad():
-        validres = _do(net, dataloader, optim, loss_fn)
-        validloss.extend(validres[0])
-        validacc.extend(validres[1])
+    validloss.extend(validres[0])
+    validacc.extend(validres[1])
 
   return (trainloss, trainacc), (validloss, validacc)
 
