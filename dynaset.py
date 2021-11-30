@@ -5,13 +5,17 @@ from math import ceil, floor
 
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
-from torchvision.transforms import Compose, ToTensor, Normalize, Resize
+from torchvision.transforms import \
+  Compose, ToTensor, Normalize, Resize
 
 from PIL import Image
 import pandas as pd
 
+import visual
+
 
 class DynaSet(Dataset):
+  @torch.no_grad()
   def __init__(self,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset',
@@ -28,7 +32,6 @@ class DynaSet(Dataset):
           torch.stack([i[0] for i in stdz]), (0,2,3))
       self.transform.transforms.append(Normalize(std=std, mean=mean))
 
-    
   def __len__(self):
     return len(self.img_labels)
 
@@ -48,6 +51,23 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, batch_size=4):
-  return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+def load(dataset, batch_size=4, shuffle=True):
+  return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+
+class CaptureSet(Dataset):
+  @torch.no_grad()
+  def __init__(self, img):
+    self.tiles = visual.tile(visual.load(img))
+    self.tensors = [ToTensor()(i) for i in self.tiles]
+    std, mean = torch.std_mean(torch.stack(self.tensors), (0,2,3))
+    self.norm = Normalize(std=std, mean=mean)
+
+  @torch.no_grad()
+  def __len__(self):
+    return len(self.tiles)
+
+  @torch.no_grad()
+  def __getitem__(self, idx):
+    return self.norm(self.tensors[idx])
 

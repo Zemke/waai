@@ -83,20 +83,22 @@ trained with only part of the dataset")
   if evalu:
     print('evaluating')
     for i in trange(len(imgs)):
-      tiles = visual.tile(visual.load(imgs[i]))
-      rr = dynanet.eval(net, tiles)
+      dl = dynaset.load(
+          dynaset.CaptureSet(
+              imgs[i]), batch_size=512, shuffle=False)
+      rr = dynanet.pred_capture(net, dl)
       #import numpy as np
       #np.save("rr.npy", rr)
       #with open('./rr.npy', 'rb') as f:
       #  rr = np.load(f)
       if isinstance(topn, int):
-        top, topargs = visual.topk(tiles, rr, topn)
+        top, topargs = visual.topk(dl.dataset.tiles, rr, topn)
       else:
-        top, topargs = visual.topprob(tiles, sidmoid(rr), topn)
+        top, topargs = visual.topprob(dl.dataset.tiles, sidmoid(rr), topn)
       for i in range(len(top)):
         ts = round(time() * 1000000)
         score = round(rr[topargs[i]]*100)
         visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
   if fromstdin is not None:
-    print(sigmoid(dynanet.eval(net, [fromstdin])[0]))  # sigmoid
+    print(sigmoid(dynanet.pred(net, fromstdin)[0]))  # sigmoid
 

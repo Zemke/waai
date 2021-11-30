@@ -108,24 +108,34 @@ def train(net, dl_train, dl_valid=None):
   return (trainloss, trainacc), (validloss, validacc)
 
 
-def eval(net, imgs):
+@torch.no_grad()
+def pred_capture(net, dl):
   res = []
-  with torch.no_grad():
-    for i in trange(len(imgs), leave=False):
-      net.eval()
+  for i, b in enumerate(dl):
+    net.eval()
+    y = net(b)
+    res.extend(y.squeeze().detach().numpy())
+  return res
 
-      # standardize
-      norm_img = Compose([ToTensor(), Resize((25,25)),])(imgs[i])
-      try:
-        std, mean = torch.std_mean(norm_img.unsqueeze(0), (0,2,3))
-        std = torch.maximum(std, torch.full((3,), .0001))
-        norm_img = Normalize(std=std, mean=std)(norm_img)
-      except ValueError as e:  # std is 0
-        p5 = torch.full((3,), .5)
-        norm_img = Normalize(std=p5, mean=p5)(norm_img)
 
-      r = net(norm_img.unsqueeze(0))
-      res.append(r.squeeze().item())
+@torch.no_grad()
+def pred(net, img):
+  res = []
+  net.eval()
+
+  # standardize
+  norm_img = Compose([ToTensor(), Resize((25,25)),])(img)
+  try:
+    std, mean = torch.std_mean(norm_img.unsqueeze(0), (0,2,3))
+    std = torch.maximum(std, torch.full((3,), .0001))
+    norm_img = Normalize(std=std, mean=std)(norm_img)
+  except ValueError as e:  # std is 0
+    p5 = torch.full((3,), .5)
+    norm_img = Normalize(std=p5, mean=p5)(norm_img)
+
+  r = net(norm_img.unsqueeze(0))
+  print('it', r.squeeze().item())
+  res.append(r.squeeze().item())
   return res
 
 
