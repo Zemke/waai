@@ -97,7 +97,7 @@ trained with only part of the dataset")
         top, topargs = visual.topprob(dl.dataset.tiles, sidmoid(rr), topn)
       for i in range(len(top)):
         ts = round(time() * 1000000)
-        score = round(rr[topargs[i]]*100)
+        score = round(sigmoid(rr[topargs[i]]) * 10000)
         visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
   if fromstdin is not None:
     print(sigmoid(dynanet.pred(net, fromstdin)[0]))  # sigmoid
