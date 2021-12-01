@@ -75,7 +75,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       losses.append(running_loss/divisor)
       accs.append(running_acc/divisor)
       running_loss, running_acc = 0., 0.
-      if train:
+      if train and os.environ.get("TRAINONLY") != '1':
         with torch.no_grad():
           validres = _do(net, dl_train, dl_valid, loss_fn, None)
           losses_val.append(sum(validres[0])/len(validres[0]))
@@ -83,6 +83,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
         progr.set_postfix(
             loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
             val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
+      else:
+        progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
 
   if train:
     return (losses, accs), (losses_val, accs_val)
