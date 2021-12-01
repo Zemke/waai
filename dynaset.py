@@ -5,8 +5,7 @@ from math import ceil, floor
 
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
-from torchvision.transforms import \
-  Compose, ToTensor, Normalize, Resize
+from torchvision.transforms import functional as F
 
 import numpy as np
 from PIL import Image
@@ -19,19 +18,9 @@ class DynaSet(Dataset):
   @torch.no_grad()
   def __init__(self,
                annotations_file='./dataset/annot.csv',
-               img_dir='./dataset',
-               standardized=False):
+               img_dir='./dataset'):
     self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
-    self.transform = Compose([ToTensor(), Resize((25,25))])
-    if not standardized:
-      stdz = DynaSet(
-          annotations_file=annotations_file,
-          img_dir=img_dir,
-          standardized=True)
-      std, mean = torch.std_mean(
-          torch.stack([i[0] for i in stdz]), (0,2,3))
-      self.transform.transforms.append(Normalize(std=std, mean=mean))
 
   def __len__(self):
     return len(self.img_labels)
@@ -40,10 +29,7 @@ class DynaSet(Dataset):
     img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
     image = Image.open(img_path)
     # image = read_image(img_path) pytorch/vision#4181
-    label = self.img_labels.iloc[idx, 1]
-    if self.transform:
-      image = self.transform(image)
-    return image, float(label)
+    return F.to_tensor(image), float(self.img_labels.iloc[idx, 1])
 
 
 def splitset(ds):
@@ -61,9 +47,6 @@ class CaptureSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)[50:-75, 50:-50,:]
     self.tiles = visual.tile(img)
-    self.tensors = [self._tensorify(i) for i in self.tiles]
-    std, mean = torch.std_mean(torch.stack(self.tensors), (0,2,3))
-    self.norm = Normalize(std=std, mean=mean)
 
   def _tensorify(self, x):
     return torch.as_tensor(x, dtype=torch.float32) \
@@ -75,5 +58,5 @@ class CaptureSet(Dataset):
 
   @torch.no_grad()
   def __getitem__(self, idx):
-    return self.norm(self.tensors[idx])
+    return F.to_tensor(self.tiles[idx])
 

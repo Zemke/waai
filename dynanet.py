@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
+import os
+
 import torch
 from torch import nn
-from torchvision.transforms import Compose, ToTensor, Normalize, Resize
+from torchvision.transforms import functional as F
 
 from tqdm import trange, tqdm
 import numpy as np
 
 
 STEP = 10
-EPOCHS = 5
+EPOCHS = 18
 
 
 class DynaNet(nn.Module):
@@ -124,18 +126,7 @@ def pred_capture(net, dl):
 def pred(net, img):
   res = []
   net.eval()
-
-  # standardize
-  norm_img = Compose([ToTensor(), Resize((25,25)),])(img)
-  try:
-    std, mean = torch.std_mean(norm_img.unsqueeze(0), (0,2,3))
-    std = torch.maximum(std, torch.full((3,), .0001))
-    norm_img = Normalize(std=std, mean=std)(norm_img)
-  except ValueError as e:  # std is 0
-    p5 = torch.full((3,), .5)
-    norm_img = Normalize(std=p5, mean=p5)(norm_img)
-
-  r = net(norm_img.unsqueeze(0))
+  r = net(F.to_tensor(norm_img).unsqueeze(0))
   res.append(r.squeeze().item())
   return res
 
