@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.transforms import \
   Compose, ToTensor, Normalize, Resize
 
+import numpy as np
 from PIL import Image
 import pandas as pd
 
@@ -60,9 +61,13 @@ class CaptureSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)[50:-75, 50:-50,:]
     self.tiles = visual.tile(img)
-    self.tensors = [ToTensor()(i) for i in self.tiles]
+    self.tensors = [self._tensorify(i) for i in self.tiles]
     std, mean = torch.std_mean(torch.stack(self.tensors), (0,2,3))
     self.norm = Normalize(std=std, mean=mean)
+
+  def _tensorify(self, x):
+    return torch.as_tensor(x, dtype=torch.float32) \
+        .permute((2,0,1)).contiguous()
 
   @torch.no_grad()
   def __len__(self):
