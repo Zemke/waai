@@ -71,6 +71,7 @@ class MultiSet(Dataset):
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
     df = pd.read_csv(annotations_file)
+    # TODO test on negative samples as well
     self.img_labels = df[df["label"] != -1]
     self.img_dir = img_dir
     # TODO augment
