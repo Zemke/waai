@@ -4,9 +4,12 @@ import os
 from math import ceil, floor
 
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import \
+    Dataset, DataLoader, ConcatDataset, random_split
 from torchvision.transforms import \
-    Compose, ToTensor, Resize, functional as F
+    Compose, ToTensor, Resize, \
+    RandomRotation, RandomAffine, RandomHorizontalFlip, \
+    functional as F
 
 import numpy as np
 from PIL import Image
@@ -14,7 +17,7 @@ import pandas as pd
 
 import visual
 
-CLASSES = ['worm', 'mine', 'barrel', 'dynamite']
+CLASSES = ['worm', 'mine', 'barrel', 'dynamite', 'neg']
 
 
 class SingleSet(Dataset):
@@ -55,6 +58,7 @@ class CaptureMultiSet(Dataset):
   @torch.no_grad()
   def __init__(self, path):
     img = visual.load(path)
+    # TODO kernel=30 is incompatible with singlenet
     self.tiles = visual.tile(img, kernel=30)
 
   @torch.no_grad()
@@ -71,17 +75,59 @@ class MultiSet(Dataset):
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
     df = pd.read_csv(annotations_file)
-    # TODO test on negative samples as well
-    self.img_labels = df[df["label"] != -1]
+    self.img_labels = df
     self.img_dir = img_dir
-    # TODO augment
     self.transform = Compose([ToTensor(), Resize((30,30))])
+    self.augment()
+
+  def augment(self):
+    class AugmentDataset(Dataset):
+      def __init__(self):
+        self.imgs = []
+      def add(self, path, label, transform):
+        self.imgs.append([
+            path, label,
+            Compose([ToTensor(), Resize((30,30)), transform])])
+      def __len__(self):
+        return len(self.imgs)
+      def __getitem__(self, idx):
+        path, label, transform = self.imgs[idx]
+        image = Image.open(path).convert('RGB')
+        return transform(image), label
+
+    aug_ds = AugmentDataset()
+
+    for i in range(len(self.img_labels)):
+      label, path = self.img_labels.iloc[i, 1], self.im_path(i)
+      clazz = CLASSES[label]
+      if clazz == 'neg':
+        continue
+      if clazz == 'worm':
+        for _ in range(2):
+          aug_ds.add(path, label, RandomRotation(30))
+          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+          aug_ds.add(path, label, RandomHorizontalFlip(p=.5))
+      elif clazz == 'mine':
+        for _ in range(4):
+          aug_ds.add(path, label, RandomRotation(180))
+        aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+      elif clazz == 'barrel':
+        for _ in range(2):
+          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+      elif clazz == 'dynamite':
+        for _ in range(2):
+          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+
+    return ConcatDataset([aug_ds, self])
+
+  def im_path(self, idx):
+    return os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
 
   def __len__(self):
     return len(self.img_labels)
 
   def __getitem__(self, idx):
-    img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+    img_path = self.im_path(idx)
     image = Image.open(img_path).convert('RGB')
     # image = read_image(img_path) pytorch/vision#4181
     return self.transform(image), self.img_labels.iloc[idx, 1]

@@ -27,14 +27,16 @@ class Runner:
   
   def pretrained(self, path):
     self.net = multinet.pretrained(path) if self.multi else singlenet.pretrained(path)
+
     print(f'using existing model {path}')
     return self.net
 
   def dataset(self):
-    self.ds = dataset.MultiSet() if self.multi else dataset.SingleSet()
     if self.multi:
+      self.ds = dataset.MultiSet().augment()
       print(f"training on classes: {dataset.CLASSES}")
     else:
+      self.ds = dataset.SingleSet()
       print("binary classification")
     return self.ds
 
@@ -63,36 +65,31 @@ class Runner:
       return sigmoid(singlenet.pred(net, fromstdin)[0])
 
 
-  def pred_capture(self, dl, topn=None):
-    import matplotlib.pyplot as plt
-    if self.multi:
-      yy = multinet.pred_capture(self.net, dl)
-      for i in range(len(yy)):
-        argmax = np.argmax(yy[i])
-        score = round(sigmoid(yy[i][argmax]) * 10000)
-        if score > 8000:
-          clazz = dataset.CLASSES[argmax]
-          if clazz == 'dynamite':
-            continue
-
-          plt.imshow(dl.dataset.tiles[i])
-          plt.title(f"{score/100}_{clazz}.png")
-          plt.show()
-
-          ts = round(time() * 1000000)
-          # TODO not sure ith tile is really what we've just predicted
-          visual.write_img(dl.dataset.tiles[i], target_dir,
-                           f"{score}_{clazz}_{ts}.png")
-    else:
-      yy = singlenet.pred_capture(self.net, dl)
-      if isinstance(topn, int):
-        top, topargs = visual.topk(dl.dataset.tiles, yy, topn)
+  def pred_capture(self, paths, target_dir, topn):
+    for i in trange(len(paths)):
+      dl = dataset.load(
+          dataset.CaptureMultiSet(
+              paths[i]), batch_size=800*640, shuffle=False)
+      if self.multi:
+        preds = multinet.pred_capture(self.net, dl)
+        argsorted = preds.argsort(axis=0)
+        for ci in range(len(dataset.CLASSES)):
+          for toparg in argsorted[:,ci][::-1][:topn]:
+            score = round(sigmoid(preds[toparg][ci]) * 10000)
+            ts = round(time() * 1000000)
+            visual.write_img(
+                dl.dataset.tiles[toparg], target_dir,
+                f"{dataset.CLASSES[ci]}_{score}_{ts}.png")
       else:
-        top, topargs = visual.topprob(dl.dataset.tiles, sidmoid(yy), topn)
-      for i in range(len(top)):
-        ts = round(time() * 1000000)
-        score = round(sigmoid(yy[topargs[i]]) * 10000)
-        visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
+        yy = singlenet.pred_capture(self.net, dl)
+        if isinstance(topn, int):
+          top, topargs = visual.topk(dl.dataset.tiles, yy, topn)
+        else:
+          top, topargs = visual.topprob(dl.dataset.tiles, sidmoid(yy), topn)
+        for i in range(len(top)):
+          ts = round(time() * 1000000)
+          score = round(sigmoid(yy[topargs[i]]) * 10000)
+          visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
 
 
 if __name__ == "__main__":
@@ -163,11 +160,7 @@ trained with only part of the dataset")
         print('saved')
   if pred:
     print('evaluating')
-    for i in trange(len(imgs)):
-      dl = dataset.load(
-          dataset.CaptureMultiSet(
-              imgs[i]), batch_size=800*640, shuffle=False)
-      runner.pred_capture(dl, topn)
+    runner.pred_capture(imgs, target_dir, topn)
   if fromstdin is not None:
     print(runner.pred())
 

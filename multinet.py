@@ -6,42 +6,54 @@ import torch
 from torch import nn
 from torchvision.transforms import functional as F
 
-from tqdm import trange, tqdm
+from tqdm import tqdm
 import numpy as np
 
 STEP = 15
 EPOCHS = 3
 
 
-# TODO network too big
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
-    self.convs = nn.Sequential(
-      nn.Conv2d(3, 16, 3, padding=1),
-      nn.ReLU(inplace=True),
-      nn.MaxPool2d(2),
-      nn.Conv2d(16, 85, 3, padding=1),
-      nn.ReLU(inplace=True),
-      nn.MaxPool2d(2),
+    self.features = nn.Sequential(
+        nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=2),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+
+        nn.Conv2d(64, 192, kernel_size=2, padding=2),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+
+        #nn.Conv2d(192, 384, kernel_size=3, padding=1),
+        #nn.ReLU(inplace=True),
+
+        #nn.Conv2d(384, 256, kernel_size=3, padding=1),
+        #nn.ReLU(inplace=True),
+
+        #nn.Conv2d(256, 256, kernel_size=3, padding=1),
+        #nn.ReLU(inplace=True),
+
+        #nn.MaxPool2d(kernel_size=3, stride=2),
     )
-    self.avgpool = nn.AdaptiveAvgPool2d((6,6))
+    self.avgpool = nn.AdaptiveAvgPool2d((3, 3))
     self.classifier = nn.Sequential(
-      nn.Dropout(p=.5),
-      nn.Flatten(),
-      nn.Linear(3060, 1000),
-      nn.ReLU(inplace=True),
-      nn.Dropout(p=.5),
-      nn.Linear(1000, 500),
-      nn.ReLU(inplace=True),
-      nn.Dropout(p=.5),
-      nn.Linear(500, num_classes)
+        nn.Dropout(p=.5),
+        nn.Linear(1728, 768),
+        #nn.Linear(256 * 6 * 6, 4096),
+        nn.ReLU(inplace=True),
+        nn.Dropout(p=.5),
+        nn.Linear(768, 768),
+        #nn.Linear(4096, 4096),
+        nn.ReLU(inplace=True),
+        nn.Linear(768, num_classes),
+        #nn.Linear(4096, num_classes),
     )
 
-  def forward(self, x):
-    x = self.convs(x)
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    x = self.features(x)
     x = self.avgpool(x)
-    #print(x.flatten(1).shape)
+    x = torch.flatten(x, 1)
     x = self.classifier(x)
     return x
 
@@ -91,8 +103,10 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
           losses_val.append(sum(validres[0])/len(validres[0]))
           accs_val.append(sum(validres[1])/len(validres[1]))
         progr.set_postfix(
-            loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
-            val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
+            loss=f"{losses[-1]:.4f}",
+            acc=f"{accs[-1]:.2f}",
+            val_loss=f"{losses_val[-1]:.4f}",
+            val_acc=f"{accs_val[-1]:.2f}")
       else:
         progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
 
@@ -122,19 +136,18 @@ def train(net, dl_train, dl_valid=None):
 
 @torch.no_grad()
 def pred_capture(net, dl):
-  res = []
+  if len(dl) > 1:
+    raise Exception("batch should encompass the whole dataset")
   for i, b in enumerate(dl):
     net.eval()
     y = net(b)
-    res.extend(y.detach().numpy())
-    break
-  return res
+    return y.detach().numpy()
 
 
 @torch.no_grad()
 def pred(net, img):
   net.eval()
-  # TODO centralize transforms
+  # TODO centralize transforms and then it's just like pred_capture
   y = net(F.resize(F.to_tensor(img), (30,30)).unsqueeze(0))
   return y.squeeze().detach().numpy()
 
