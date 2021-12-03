@@ -9,26 +9,40 @@ from torchvision.transforms import functional as F
 from tqdm import trange, tqdm
 import numpy as np
 
+STEP = 15
+EPOCHS = 3
 
-STEP = 10
-EPOCHS = 18
 
-
-class DynaNet(nn.Module):
-  def __init__(self):
+# TODO network too big
+class MultiNet(nn.Module):
+  def __init__(self, num_classes):
     super().__init__()
-    self.flatten = nn.Flatten()
-    self.fc = nn.Sequential(
-      nn.Linear(1875, 1000),
-      nn.ReLU(),
+    self.convs = nn.Sequential(
+      nn.Conv2d(3, 16, 3, padding=1),
+      nn.ReLU(inplace=True),
+      nn.MaxPool2d(2),
+      nn.Conv2d(16, 85, 3, padding=1),
+      nn.ReLU(inplace=True),
+      nn.MaxPool2d(2),
+    )
+    self.avgpool = nn.AdaptiveAvgPool2d((6,6))
+    self.classifier = nn.Sequential(
+      nn.Dropout(p=.5),
+      nn.Flatten(),
+      nn.Linear(3060, 1000),
+      nn.ReLU(inplace=True),
+      nn.Dropout(p=.5),
       nn.Linear(1000, 500),
-      nn.ReLU(),
-      nn.Linear(500, 1),
+      nn.ReLU(inplace=True),
+      nn.Dropout(p=.5),
+      nn.Linear(500, num_classes)
     )
 
   def forward(self, x):
-    x = self.flatten(x)
-    x = self.fc(x)
+    x = self.convs(x)
+    x = self.avgpool(x)
+    #print(x.flatten(1).shape)
+    x = self.classifier(x)
     return x
 
 
@@ -48,21 +62,15 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       optim.zero_grad()
 
     y = net(b)
-    loss = loss_fn(y.view(-1), l)
+    loss = loss_fn(y, l)
 
     if train:
       loss.backward()
       optim.step()
 
     # accuracy
-    y_sigmoid = nn.Sigmoid()(y.squeeze())
-    stck = torch.stack((l, y_sigmoid.view(-1)), 1).detach().numpy()
-    stck = np.diff(stck).reshape(-1) - 1
-    stck[stck < -1] += 2
-    acc = np.abs(stck).sum() / len(b)
-
     running_loss += loss.item()
-    running_acc += acc
+    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / 4
 
     stepped = False
     step_mod = (i+1) % STEP
@@ -95,8 +103,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
-  optim = torch.optim.Adam(net.parameters(), lr=1e-5)
-  loss_fn = nn.BCEWithLogitsLoss()
+  optim = torch.optim.Adam(net.parameters(), lr=1e-3)
+  loss_fn = nn.CrossEntropyLoss()
 
   trainloss, trainacc = [], []
   validloss, validacc = [], []
@@ -118,17 +126,17 @@ def pred_capture(net, dl):
   for i, b in enumerate(dl):
     net.eval()
     y = net(b)
-    res.extend(y.squeeze().detach().numpy())
+    res.extend(y.detach().numpy())
+    break
   return res
 
 
 @torch.no_grad()
 def pred(net, img):
-  res = []
   net.eval()
-  r = net(F.to_tensor(norm_img).unsqueeze(0))
-  res.append(r.squeeze().item())
-  return res
+  # TODO centralize transforms
+  y = net(F.resize(F.to_tensor(img), (30,30)).unsqueeze(0))
+  return y.squeeze().detach().numpy()
 
 
 def save(net, path):
@@ -136,7 +144,10 @@ def save(net, path):
 
 
 def pretrained(path):
-  net = DynaNet()
-  net.load_state_dict(torch.load(path))
+  state_dict = torch.load(path)
+  num_classes = len(state_dict[next(reversed(state_dict))])
+  print(f'loaded module has {num_classes} classes')
+  net = MultiNet(num_classes)
+  net.load_state_dict(state_dict)
   return net
 

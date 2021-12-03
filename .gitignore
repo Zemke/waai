@@ -1,5 +1,4 @@
-dataset/pos/*.png
-dataset/neg/*.png
+dataset/*/*.png
 dataset/annot.csv
 
 fooling.ipynb

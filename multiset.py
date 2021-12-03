@@ -14,11 +14,11 @@ import pandas as pd
 import visual
 
 
-class DynaSet(Dataset):
+class MultiSet(Dataset):
   @torch.no_grad()
   def __init__(self,
-               annotations_file='./dataset/annot.csv',
-               img_dir='./dataset'):
+               annotations_file='./multiset/annot.csv',
+               img_dir='./multiset'):
     self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
 
