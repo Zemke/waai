@@ -112,7 +112,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
-  optim = torch.optim.Adam(net.parameters(), lr=1e-3)
+  optim = torch.optim.Adam(net.parameters(), lr=1e-5)
   loss_fn = nn.CrossEntropyLoss()
 
   trainloss, trainacc = [], []
