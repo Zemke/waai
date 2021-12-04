@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 
 STEP = 15
-EPOCHS = 3
+EPOCHS = 8
 
 
 class MultiNet(nn.Module):
@@ -39,15 +39,10 @@ class MultiNet(nn.Module):
     self.avgpool = nn.AdaptiveAvgPool2d((3, 3))
     self.classifier = nn.Sequential(
         nn.Dropout(p=.5),
-        nn.Linear(1728, 768),
-        #nn.Linear(256 * 6 * 6, 4096),
+        nn.Linear(1728, 800),
         nn.ReLU(inplace=True),
         nn.Dropout(p=.5),
-        nn.Linear(768, 768),
-        #nn.Linear(4096, 4096),
-        nn.ReLU(inplace=True),
-        nn.Linear(768, num_classes),
-        #nn.Linear(4096, num_classes),
+        nn.Linear(800, num_classes),
     )
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
