@@ -1,0 +1,5 @@
+worm
+mine
+barrel
+dynamite
+neg

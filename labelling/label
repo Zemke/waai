@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm -r crops/*
+rm source/* target/*
+find ~/Desktop/dyna5000/captures -name *.png  | sort -R | tail -n20 | xargs -I% cp % source/
+cat classes.txt | xargs -I% mkdir crops/%
+
