@@ -74,8 +74,7 @@ class MultiSet(Dataset):
   def __init__(self,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
-    df = pd.read_csv(annotations_file)
-    self.img_labels = df
+    self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
     self.transform = Compose([ToTensor(), Resize((30,30))])
     self.augment()
@@ -118,7 +117,7 @@ class MultiSet(Dataset):
         for _ in range(2):
           aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
 
-    return ConcatDataset([aug_ds, self])
+    return self + aug_ds
 
   def im_path(self, idx):
     return os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
@@ -134,7 +133,7 @@ class MultiSet(Dataset):
 
 
 def splitset(ds):
-  splits = [ceil(len(ds)*.9), floor(len(ds)*.1)]
+  splits = [ceil(len(ds)*.8), floor(len(ds)*.2)]
   train, test = random_split(ds, splits, torch.Generator().manual_seed(42))
   return train, test
 
