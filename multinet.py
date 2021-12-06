@@ -17,19 +17,19 @@ class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
     self.features = nn.Sequential(
-        nn.Conv2d(3, 12, 4),
+        nn.Conv2d(3, 12, 2),
         nn.ReLU(inplace=True),
-        nn.Conv2d(12, 20, 4),
+        nn.Conv2d(12, 20, 2),
         nn.ReLU(inplace=True),
         nn.MaxPool2d(2, 2),
     )
     self.classifier = nn.Sequential(
         nn.Dropout(p=.5),
-        nn.Linear(2880, 1920),
+        nn.Linear(3920, 2600),
         nn.ReLU(inplace=True),
-        nn.Linear(1920, 1280),
+        nn.Linear(2600, 1000),
         nn.ReLU(inplace=True),
-        nn.Linear(1280, num_classes),
+        nn.Linear(1000, num_classes),
     )
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
