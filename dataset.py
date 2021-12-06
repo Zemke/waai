@@ -8,7 +8,7 @@ from torch.utils.data import \
     Dataset, DataLoader, ConcatDataset, random_split
 from torchvision.transforms import \
     Compose, ToTensor, Resize, \
-    RandomRotation, RandomAffine, RandomHorizontalFlip, \
+    RandomRotation, RandomAffine, RandomHorizontalFlip, Pad, \
     functional as F
 
 import numpy as np
@@ -83,39 +83,43 @@ class MultiSet(Dataset):
     class AugmentDataset(Dataset):
       def __init__(self):
         self.imgs = []
+        self.to_tensor = ToTensor()
+        self.resize = Resize((30,30))
       def add(self, path, label, transform):
-        self.imgs.append([
-            path, label,
-            Compose([ToTensor(), Resize((30,30)), transform])])
+        self.imgs.append([path, label, transform])
       def __len__(self):
         return len(self.imgs)
       def __getitem__(self, idx):
         path, label, transform = self.imgs[idx]
         image = Image.open(path).convert('RGB')
-        return transform(image), label
+        compose = Compose([self.to_tensor, transform, self.resize])
+        return compose(image), label
 
     aug_ds = AugmentDataset()
 
     for i in range(len(self.img_labels)):
       label, path = self.img_labels.iloc[i, 1], self.im_path(i)
       clazz = CLASSES[label]
-      if clazz == 'neg':
-        continue
       if clazz == 'worm':
-        for _ in range(2):
-          aug_ds.add(path, label, RandomRotation(30))
-          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
-          aug_ds.add(path, label, RandomHorizontalFlip(p=.5))
-      elif clazz == 'mine':
-        for _ in range(4):
-          aug_ds.add(path, label, RandomRotation(180))
+        aug_ds.add(path, label, RandomRotation(10))
         aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+        aug_ds.add(path, label, RandomHorizontalFlip(p=.5))
+      elif clazz == 'mine':
+        for _ in range(3):
+          aug_ds.add(path, label, RandomRotation(40))
+        for _ in range(4):
+          aug_ds.add(path, label, RandomRotation(20))
+        for _ in range(3):
+          aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+        for i in range(4, 9, 2):
+          aug_ds.add(path, label, Pad(i, padding_mode='edge'))
       elif clazz == 'barrel':
-        for _ in range(2):
-          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+        for _ in range(4):
+          aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+        for i in range(4, 11):
+          aug_ds.add(path, label, Pad(i))
       elif clazz == 'dynamite':
-        for _ in range(2):
-          aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
+        aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
 
     return self + aug_ds
 
