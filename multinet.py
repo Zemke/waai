@@ -77,7 +77,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
     # accuracy
     running_loss += loss.item()
-    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / 4
+    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
 
     stepped = False
     step_mod = (i+1) % STEP

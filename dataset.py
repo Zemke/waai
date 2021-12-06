@@ -142,6 +142,6 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, batch_size=4, shuffle=True):
+def load(dataset, batch_size=8, shuffle=True):
   return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
