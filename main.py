@@ -162,9 +162,8 @@ if __name__ == "__main__":
 trained with only part of the dataset")
     else:
       loc = "./model_multinet.pt" if runner.multi else "./model_singlenet.pt"
-      print(f'overwrite model to {loc}? [y/N]', end=' ')
-      ask = input().strip().lower()
-      if ask == 'y':
+      print(f'overwrite model to {loc}? [Y/n]', end=' ')
+      if input().strip().lower() != 'n':
         runner.save(loc)
         print('saved')
   if pred:
