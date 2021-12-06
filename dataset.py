@@ -67,7 +67,7 @@ class CaptureMultiSet(Dataset):
 
   @torch.no_grad()
   def __getitem__(self, idx):
-    return F.to_tensor(self.tiles[idx])
+    return F.resize(F.to_tensor(self.tiles[idx]), (30,30))
 
 class MultiSet(Dataset):
 
