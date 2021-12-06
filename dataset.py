@@ -93,6 +93,11 @@ class MultiSet(Dataset):
         path, label, transform = self.imgs[idx]
         image = Image.open(path).convert('RGB')
         compose = Compose([self.to_tensor, transform, self.resize])
+        #imshow augmentation
+        #if label == CLASSES.index('mine'):
+        #  import matplotlib.pyplot as plt
+        #  plt.imshow(compose(image).permute((1,2,0)))
+        #  plt.show()
         return compose(image), label
 
     aug_ds = AugmentDataset()
