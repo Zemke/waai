@@ -58,8 +58,8 @@ class CaptureMultiSet(Dataset):
   @torch.no_grad()
   def __init__(self, path):
     img = visual.load(path)
-    # TODO kernel=30 is incompatible with singlenet
-    self.tiles = visual.tile(img, kernel=30)
+    # TODO kernel is incompatible with singlenet
+    self.tiles = visual.tile(img, kernel=30, stride=3)
 
   @torch.no_grad()
   def __len__(self):

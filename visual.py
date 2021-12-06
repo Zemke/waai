@@ -16,8 +16,7 @@ def loadstdin(stdin):
   buff = np.frombuffer(stdin.buffer.read(), dtype='uint8')
   return cv2.cvtColor(cv2.imdecode(buff, 1), cv2.COLOR_BGR2RGB)
 
-def tile(img, kernel=25):
-  stride = 2
+def tile(img, kernel=25, stride=2):
   res = []
   for xi in range(0, len(img), stride):
     for yi in range(0, len(img[xi]), stride):
