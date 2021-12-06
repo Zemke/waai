@@ -143,14 +143,17 @@ if __name__ == "__main__":
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
       dl_train, dl_test = dataset.load(ds_train), dataset.load(ds_test)
-      c = np.zeros(len(dataset.CLASSES), dtype=int)
-      if os.environ.get('LOGSPLIT'):
-        for _, l in dl_train:
-          for ci in range(len(dataset.CLASSES)):
-            c[ci] += len(l[l == ci])
-        print('test split class seed:', c)
     else:
       dl_train, dl_test = dataset.load(data), None
+    if os.environ.get('LOGSPLIT'):
+      for dl in [dl_train, dl_test]:
+        if dl is None:
+          continue
+        c = np.zeros(len(dataset.CLASSES), dtype=int)
+        for _, l in dl:
+          for ci in range(len(dataset.CLASSES)):
+            c[ci] += len(l[l == ci])
+        print('split class seed:', c)
     trainres, validres = runner.train(dl_train, dl_test)
     if os.environ.get("TRAINONLY") != '1':
       visual.plt_res(trainres, validres, runner.epochs)

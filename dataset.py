@@ -59,7 +59,7 @@ class CaptureMultiSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)
     # TODO kernel is incompatible with singlenet
-    self.tiles = visual.tile(img, kernel=30, stride=3)
+    self.tiles = visual.tile(img, kernel=30, stride=10)
 
   @torch.no_grad()
   def __len__(self):
@@ -110,14 +110,12 @@ class MultiSet(Dataset):
         aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
         aug_ds.add(path, label, RandomHorizontalFlip(p=.5))
       elif clazz == 'mine':
-        for _ in range(3):
+        for _ in range(2):
           aug_ds.add(path, label, RandomRotation(40))
-        for _ in range(4):
           aug_ds.add(path, label, RandomRotation(20))
-        for _ in range(3):
-          aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+        aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
         for i in range(4, 9, 2):
-          aug_ds.add(path, label, Pad(i, padding_mode='edge'))
+          aug_ds.add(path, label, Pad(i))
       elif clazz == 'barrel':
         for _ in range(4):
           aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
