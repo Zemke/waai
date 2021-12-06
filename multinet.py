@@ -9,46 +9,33 @@ from torchvision.transforms import functional as F
 from tqdm import tqdm
 import numpy as np
 
-STEP = 15
-EPOCHS = 8
+STEP = 300
+EPOCHS = 10
 
 
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
     self.features = nn.Sequential(
-        nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=2),
+        nn.Conv2d(3, 9, 5),
         nn.ReLU(inplace=True),
-        nn.MaxPool2d(kernel_size=3, stride=2),
-
-        nn.Conv2d(64, 192, kernel_size=2, padding=2),
+        nn.MaxPool2d(2, 2),
+        nn.Conv2d(9, 20, 5),
         nn.ReLU(inplace=True),
-        nn.MaxPool2d(kernel_size=3, stride=2),
-
-        #nn.Conv2d(192, 384, kernel_size=3, padding=1),
-        #nn.ReLU(inplace=True),
-
-        #nn.Conv2d(384, 256, kernel_size=3, padding=1),
-        #nn.ReLU(inplace=True),
-
-        #nn.Conv2d(256, 256, kernel_size=3, padding=1),
-        #nn.ReLU(inplace=True),
-
-        #nn.MaxPool2d(kernel_size=3, stride=2),
     )
-    self.avgpool = nn.AdaptiveAvgPool2d((3, 3))
     self.classifier = nn.Sequential(
         nn.Dropout(p=.5),
-        nn.Linear(1728, 800),
+        nn.Linear(1620, 972),
         nn.ReLU(inplace=True),
-        nn.Dropout(p=.5),
-        nn.Linear(800, num_classes),
+        nn.Linear(972, 648),
+        nn.ReLU(inplace=True),
+        nn.Linear(648, num_classes),
     )
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.features(x)
-    x = self.avgpool(x)
     x = torch.flatten(x, 1)
+    #print(x.shape)
     x = self.classifier(x)
     return x
 
@@ -112,7 +99,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
-  optim = torch.optim.Adam(net.parameters(), lr=1e-5)
+  optim = torch.optim.Adam(net.parameters(), lr=1e-4)
   loss_fn = nn.CrossEntropyLoss()
 
   trainloss, trainacc = [], []
