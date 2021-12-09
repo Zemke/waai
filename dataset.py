@@ -17,7 +17,7 @@ import pandas as pd
 
 import visual
 
-CLASSES = ['worm', 'mine', 'barrel', 'dynamite', 'neg']
+CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
 
 
 class SingleSet(Dataset):

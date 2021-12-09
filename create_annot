@@ -2,15 +2,15 @@
 
 cd dataset
 echo "file,label" > annot.csv
-find worm/* | xargs -I% -n1 echo %,0 >> annot.csv
-find mine/* | xargs -I% -n1 echo %,1 >> annot.csv
-find barrel/* | xargs -I% -n1 echo %,2 >> annot.csv
-find dynamite/* | xargs -I% -n1 echo %,3 >> annot.csv
-find neg/* | xargs -I% -n1 echo %,4 >> annot.csv
+find bg/* | xargs -I% -n1 echo %,0 >> annot.csv
+find worm/* | xargs -I% -n1 echo %,1 >> annot.csv
+find mine/* | xargs -I% -n1 echo %,2 >> annot.csv
+find barrel/* | xargs -I% -n1 echo %,3 >> annot.csv
+find dynamite/* | xargs -I% -n1 echo %,4 >> annot.csv
 
+echo bg: $(find bg/* | wc -l)
 echo worm: $(find worm/* | wc -l)
 echo mine: $(find mine/* | wc -l)
 echo barrel: $(find barrel/* | wc -l)
 echo dynamite: $(find dynamite/* | wc -l)
-echo neg: $(find neg/* | wc -l)
 
