@@ -5,10 +5,8 @@ import json
 from PIL import Image
 
 import torch
-from torch.utils.data import \
-    Dataset, DataLoader
-from torchvision.transforms import \
-    Compose, ToTensor
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
 
 import dataset
 
@@ -16,11 +14,22 @@ import dataset
 class CropSet(Dataset):
   def __init__(self):
     self.files = []
-    self.transform = Compose([ToTensor()])
+    self.transform = T.Compose([T.ToTensor()])
     with os.scandir("./labelling/target") as it:
       for entry in it:
         if entry.is_file() and entry.name.lower().endswith('.json'):
           self.files.append(entry.path)
+
+    x = []
+    for idx in range(len(self.files)):
+      with open(self.files[idx], 'r') as f:
+        j = json.loads(f.read())
+      for doc in j:
+        img = Image.open("./labelling/source/" + doc["image"]).convert('RGB')
+      x.append(T.ToTensor()(img))
+    mean, std = torch.std_mean(torch.stack(x), (0,3,2))
+    print(mean, std)
+    self.transform.transforms.append(T.Normalize(mean=mean, std=std))
 
   def __len__(self):
     return len(self.files)
@@ -29,7 +38,7 @@ class CropSet(Dataset):
     with open(self.files[idx], 'r') as f:
       j = json.loads(f.read())
     for doc in j:
-      img = Image.open("./labelling/source/" + doc["image"])
+      img = Image.open("./labelling/source/" + doc["image"]).convert('RGB')
       boxes, labels = [], []
       for annot in doc["annotations"]:
         coord = annot["coordinates"]
