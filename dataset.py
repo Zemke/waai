@@ -58,7 +58,11 @@ class CaptureMultiSet(Dataset):
     img = visual.load(path)
     # TODO kernel is incompatible with singlenet
     self.tiles = visual.tile(img, kernel=30, stride=10)
-    self.transform = T.Compose([T.Resize((30,30)), T.ToTensor()])
+    self.transform = T.Compose([
+      T.ToTensor(), T.Resize((30,30)),
+      T.Normalize(mean=(.4016, .3075, .2541),
+                  std=(.3068, .2605, .2465))])
+
 
   @torch.no_grad()
   def __len__(self):
