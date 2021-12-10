@@ -6,12 +6,8 @@ from math import ceil, floor
 import torch
 from torch.utils.data import \
     Dataset, DataLoader, ConcatDataset, random_split
-from torchvision.transforms import \
-    Compose, ToTensor, Resize, \
-    RandomRotation, RandomAffine, RandomHorizontalFlip, Pad, \
-    functional as F
+import torchvision.transforms as T
 
-import numpy as np
 from PIL import Image
 import pandas as pd
 
@@ -28,6 +24,7 @@ class SingleSet(Dataset):
     df = pd.read_csv(annotations_file)
     self.img_labels = df[df["label"].isin([CLASSES.index('dynamite'), -1])]
     self.img_dir = img_dir
+    self.transform = T.ToTensor()
 
   def __len__(self):
     return len(self.img_labels)
@@ -36,7 +33,7 @@ class SingleSet(Dataset):
     img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
     image = Image.open(img_path)
     # image = read_image(img_path) pytorch/vision#4181
-    return F.to_tensor(image), float(self.img_labels.iloc[idx, 1])
+    return self.transform(image), float(self.img_labels.iloc[idx, 1])
 
 
 class CaptureSet(Dataset):
@@ -44,6 +41,7 @@ class CaptureSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)[50:-75, 50:-50,:]
     self.tiles = visual.tile(img)
+    self.transform = T.ToTensor()
 
   @torch.no_grad()
   def __len__(self):
@@ -51,7 +49,7 @@ class CaptureSet(Dataset):
 
   @torch.no_grad()
   def __getitem__(self, idx):
-    return F.to_tensor(self.tiles[idx])
+    return self.transform(self.tiles[idx])
 
 
 class CaptureMultiSet(Dataset):
@@ -60,6 +58,7 @@ class CaptureMultiSet(Dataset):
     img = visual.load(path)
     # TODO kernel is incompatible with singlenet
     self.tiles = visual.tile(img, kernel=30, stride=10)
+    self.transform = T.Compose([T.Resize((30,30)), T.ToTensor()])
 
   @torch.no_grad()
   def __len__(self):
@@ -67,7 +66,7 @@ class CaptureMultiSet(Dataset):
 
   @torch.no_grad()
   def __getitem__(self, idx):
-    return F.resize(F.to_tensor(self.tiles[idx]), (30,30))
+    return self.transform(self.tiles[idx])
 
 class MultiSet(Dataset):
 
@@ -76,53 +75,62 @@ class MultiSet(Dataset):
                img_dir='./dataset'):
     self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
-    self.transform = Compose([ToTensor(), Resize((30,30))])
+
+    transform = T.Compose([T.Resize((30,30)), T.ToTensor(),])
+    stck = []
+    for idx in range(len(self.img_labels)):
+      img_path = self.im_path(idx)
+      image = Image.open(img_path).convert('RGB')
+      stck.append(transform(image))
+    self.std, self.mean = torch.std_mean(torch.stack(stck), (0,3,2))
+    transform.transforms.append(T.Normalize(mean=self.mean, std=self.std))
+    self.transform = transform
+
     self.augment()
 
   def augment(self):
     class AugmentDataset(Dataset):
-      def __init__(self):
+      def __init__(self, transforms):
         self.imgs = []
-        self.to_tensor = ToTensor()
-        self.resize = Resize((30,30))
-      def add(self, path, label, transform):
-        self.imgs.append([path, label, transform])
+        self.transforms = transforms
+      def add(self, path, label, aug):
+        self.imgs.append((path, label, aug))
       def __len__(self):
         return len(self.imgs)
       def __getitem__(self, idx):
-        path, label, transform = self.imgs[idx]
+        path, label, aug = self.imgs[idx]
         image = Image.open(path).convert('RGB')
-        compose = Compose([self.to_tensor, transform, self.resize])
+        transform = T.Compose([aug, *self.transforms])
         #imshow augmentation
         #if label == CLASSES.index('mine'):
         #  import matplotlib.pyplot as plt
-        #  plt.imshow(compose(image).permute((1,2,0)))
+        #  plt.imshow(transform(image).permute((1,2,0)))
         #  plt.show()
-        return compose(image), label
+        return transform(image), label
 
-    aug_ds = AugmentDataset()
+    aug_ds = AugmentDataset(self.transform.transforms)
 
     for i in range(len(self.img_labels)):
       label, path = self.img_labels.iloc[i, 1], self.im_path(i)
       clazz = CLASSES[label]
       if clazz == 'worm':
-        aug_ds.add(path, label, RandomRotation(10))
-        aug_ds.add(path, label, RandomAffine(0, translate=(.2,.2)))
-        aug_ds.add(path, label, RandomHorizontalFlip(p=.5))
+        aug_ds.add(path, label, T.RandomRotation(10))
+        aug_ds.add(path, label, T.RandomAffine(0, translate=(.2,.2)))
+        aug_ds.add(path, label, T.RandomHorizontalFlip(p=.5))
       elif clazz == 'mine':
         for _ in range(2):
-          aug_ds.add(path, label, RandomRotation(40))
-          aug_ds.add(path, label, RandomRotation(20))
-        aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+          aug_ds.add(path, label, T.RandomRotation(40))
+          aug_ds.add(path, label, T.RandomRotation(20))
+        aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
         for i in range(4, 9, 2):
-          aug_ds.add(path, label, Pad(i))
+          aug_ds.add(path, label, T.Pad(i))
       elif clazz == 'barrel':
         for _ in range(4):
-          aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+          aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
         for i in range(4, 11):
-          aug_ds.add(path, label, Pad(i))
+          aug_ds.add(path, label, T.Pad(i))
       elif clazz == 'dynamite':
-        aug_ds.add(path, label, RandomAffine(0, translate=(.1,.1)))
+        aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
 
     return self + aug_ds
 
