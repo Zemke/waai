@@ -27,9 +27,6 @@ class CropSet(Dataset):
       for doc in j:
         img = Image.open("./labelling/source/" + doc["image"]).convert('RGB')
       x.append(T.ToTensor()(img))
-    mean, std = torch.std_mean(torch.stack(x), (0,3,2))
-    print(mean, std)
-    self.transform.transforms.append(T.Normalize(mean=mean, std=std))
 
   def __len__(self):
     return len(self.files)
