@@ -14,6 +14,7 @@ import pandas as pd
 import visual
 
 CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
+MEAN, STD = (.4016, .3075, .2541), (.3068, .2605, .2465)
 
 
 class SingleSet(Dataset):
@@ -59,9 +60,10 @@ class CaptureMultiSet(Dataset):
     # TODO kernel is incompatible with singlenet
     self.tiles = visual.tile(img, kernel=30, stride=10)
     self.transform = T.Compose([
-      T.ToTensor(), T.Resize((30,30)),
-      T.Normalize(mean=(.4016, .3075, .2541),
-                  std=(.3068, .2605, .2465))])
+      T.ToTensor(),
+      T.Resize((30,30)),
+      T.Normalize(mean=MEAN, std=STD)
+    ])
 
 
   @torch.no_grad()
