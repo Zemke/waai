@@ -12,6 +12,8 @@ import numpy as np
 STEP = 300
 EPOCHS = 10
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
@@ -55,6 +57,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
     if train:
       optim.zero_grad()
 
+    b, l = b.to(device), l.to(device)
     y = net(b)
     loss = loss_fn(y, l)
 
@@ -99,6 +102,10 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
+  net.to(device)
+  print(f"moved net to {device}")
+
+
   optim = torch.optim.Adam(net.parameters(), lr=1e-4)
   loss_fn = nn.CrossEntropyLoss()
 
