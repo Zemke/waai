@@ -110,10 +110,15 @@ def plot_infer(y, img, thres):
   plt.show()
 
 
-def write_createml(src_path, targ_name, y, thres):
-  targ_dir = os.getenv('TDIR', './target')
+def write_createml(targ_name, y, thres):
+  targ_dir = os.getenv('TDIR', './labelling/target')
+  dest = os.path.join(targ_dir, targ_name+'.json')
+  if os.path.exists(dest):
+    print(f'skipping json because {dest} exists')
+    return
+
   j = {}
-  j["image"] = src_path
+  j["image"] = targ_name+'.png'
   j["annotations"] = []
   topk = y['scores'] > thres
   for i, box in enumerate(y['boxes'][topk]):
@@ -123,20 +128,15 @@ def write_createml(src_path, targ_name, y, thres):
       "coordinates": {
         "x": round((x1 + w / 2).item()),
         "y": round((y1 + h / 2).item()),
-        "height": (h).item(),
-        "width": (w).item()
+        "height": h.item(),
+        "width": w.item()
       },
       "label": dataset.CLASSES[(y['labels'][i])]
     }
     j["annotations"].append(annot)
 
-
-  dest = os.path.join(targ_dir, targ_name+'.json')
-  if not os.path.exists(dest):
-    with open(dest, 'w') as f:
-      json.dump([j], f)
-  else:
-    print(f'did not write json because {dest} exists')
+  with open(dest, 'w') as f:
+    json.dump([j], f)
   return j
 
 
@@ -160,15 +160,22 @@ if __name__ == '__main__':
       print('saved')
 
   else:
-    model = pretrained(sys.argv[1])
+    pretr_path = sys.argv[1]
+    if not os.path.exists(pretr_path) or not pretr_path.endswith('.pt'):
+      print(pretr_path, 'does not exist or is not a valid model')
+      sys.exit(1)
+
+    model = pretrained(pretr_path)
     paths = sys.argv[2:]
+    for p in paths:
+      print('f', p)
     for path in (progr := tqdm(paths)):
-      progr.set_description(path[:20])
+      progr.set_description(path[-20:])
       img = Image.open(path).convert('RGB')
       y = infer(img, model)
+      thres = float(os.getenv('THRES', .8))
       if len(paths) == 1 or os.getenv('PLOTINFER') == '1':
-        thres = float(os.getenv('THRES', .8))
         print(f"threshold score is {thres}")
         plot_infer(y, img, thres)
-      write_createml(path, path.split('/')[-1][:-4], y, thres)
+      write_createml(path.split('/')[-1][:-4], y, thres)
 
