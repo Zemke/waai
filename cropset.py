@@ -51,31 +51,9 @@ class CropSet(Dataset):
     }
 
 
-class LolSet(Dataset):
-  def __init__(self):
-    # path,x1,y1,x2,y2,class
-    self.df = pd.read_csv("./captureset/annot.csv")
-    self.paths = [path for path in self.df["path"].unique()]
-
-  def __len__(self):
-    return len(self.paths)
-
-  def __getitem__(self, idx):
-    path = self.paths[idx]
-    p_df = self.df[self.df["path"] == path]
-    img = Image.open(path).convert('RGB')
-    boxes, labels = [], []
-    for e in p_df.iloc[:,1:].values:
-      boxes.append(e[:-1])
-      labels.append(e[-1])
-    return self.transform(img), {
-      "boxes": torch.as_tensor(boxes, dtype=torch.float),
-      "labels": torch.as_tensor(labels, dtype=torch.int64),
-    }
-
-
 def collate_fn(batch):
   return tuple(zip(*batch))
+
 
 def load(dataset, batch_size=4, shuffle=True):
   return DataLoader(
