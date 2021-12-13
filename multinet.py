@@ -7,7 +7,7 @@ from torch import nn
 from torchvision.transforms import functional as F
 
 from tqdm import tqdm
-import numpy as np
+
 
 STEP = 300
 EPOCHS = 10
