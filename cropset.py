@@ -27,7 +27,7 @@ class CropSet(Dataset):
       with open(self.files[idx], 'r') as f:
         j = json.loads(f.read())
       for doc in j:
-        img = Image.open("./labelling/source/" + doc["image"]).convert('RGB')
+        img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
       x.append(T.ToTensor()(img))
 
   def __len__(self):
@@ -37,7 +37,7 @@ class CropSet(Dataset):
     with open(self.files[idx], 'r') as f:
       j = json.loads(f.read())
     for doc in j:
-      img = Image.open("./labelling/source/" + doc["image"]).convert('RGB')
+      img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
       boxes, labels = [], []
       for annot in doc["annotations"]:
         coord = annot["coordinates"]
