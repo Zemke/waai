@@ -59,10 +59,11 @@ def train(model):
   print(f'training {epochs} epochs')
 
   mlosses = []
-  for epoch in range(epochs):
+  for epoch in trange(epochs, position=1):
     r_loss = 0.
-    for i, (img, l) in (progr := tqdm(enumerate(dl))):
-      img, l = list(i.to(device) for i in img), [{k: v.to(device) for k, v in t.items()} for t in l]
+    for i, (img, l) in enumerate((progr := tqdm(dl, position=0))):
+      img = list(i.to(device) for i in img)
+      l = [{k: v.to(device) for k, v in t.items()} for t in l]
       model.train()
       loss_dict = model(img, l)
       losses = sum(loss for loss in loss_dict.values())
