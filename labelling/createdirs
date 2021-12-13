@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cat classes.txt | xargs -I% mkdir crops/%
+
