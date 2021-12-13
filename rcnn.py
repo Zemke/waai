@@ -55,7 +55,7 @@ def train(model):
   model.to(device)
 
   STEP = 2
-  epochs = os.getenv('EPOCHS', 200)
+  epochs = int(os.getenv('EPOCHS', 200))
   print(f'training {epochs} epochs')
 
   mlosses = []
