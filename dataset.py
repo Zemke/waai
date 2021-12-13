@@ -13,8 +13,9 @@ import pandas as pd
 
 import visual
 
+
 CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
-MEAN, STD = (.4016, .3075, .2541), (.3068, .2605, .2465)
+MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 
 
 class SingleSet(Dataset):
