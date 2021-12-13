@@ -84,10 +84,12 @@ def train(model):
         progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f}")
         r_loss = 0.
 
+  return [i.detach().item() for i in mlosses]
 
-def plot_loss(mlosses):
+
+def plot_loss(losses):
   plt.figure(figsize=(15,10))
-  ax = plt.plot([i.detach().item() for i in mlosses])
+  ax = plt.plot(losses)
   plt.ylim(top=.6)
   plt.show()
 
@@ -151,10 +153,11 @@ if __name__ == '__main__':
     dl = cropset.load(cropset.CropSet(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
-    train(model)
+    model.load_state_dict(torch.load("./ubernet_100.pt"))
+    losses = train(model)
 
     if os.getenv('PLOTLOSS') == '1':
-      plot_loss()
+      plot_loss(losses)
 
     print('save to ./ubernet.pt? [Y/n]', end=' ')
     if not input().strip().lower().startswith('n'):
