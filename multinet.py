@@ -146,7 +146,7 @@ def save(net, path):
 
 
 def pretrained(path):
-  state_dict = torch.load(path, map_location='cpu')
+  state_dict = torch.load(path, map_location=torch.device('cpu'))
   num_classes = len(state_dict[next(reversed(state_dict))])
   print(f'loaded module has {num_classes} classes')
   net = MultiNet(num_classes)
