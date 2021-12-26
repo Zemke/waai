@@ -182,5 +182,6 @@ if __name__ == '__main__':
       if len(paths) == 1 or os.getenv('PLOTINFER') == '1':
         print(f"threshold score is {thres}")
         plot_infer(y, img, thres)
-      write_createml(path.split('/')[-1][:-4], y, thres)
+      if os.getenv('CREATEML') == '1':
+        write_createml(path.split('/')[-1][:-4], y, thres)
 
