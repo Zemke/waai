@@ -2,6 +2,7 @@
 
 import os
 import sys
+from time import sleep
 
 import torch
 from torchvision.ops import MultiScaleRoIAlign
@@ -60,6 +61,10 @@ def train(model):
 
   mlosses = []
   for epoch in trange(epochs, position=1):
+    if (epoch+1) % 120 == 0:
+      print("relax")
+      sleep(10)  # GPU relaxation time
+
     r_loss = 0.
     for i, (img, l) in enumerate((progr := tqdm(dl, position=0))):
       img = list(i.to(device) for i in img)
