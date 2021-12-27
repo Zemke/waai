@@ -155,7 +155,7 @@ if __name__ == '__main__':
 
     batch_size = os.getenv('BATCH', 4)
     print(f"batch_size is {batch_size}")
-    dl = cropset.load(cropset.CropSet(), batch_size=batch_size)
+    dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
     #model.load_state_dict(torch.load("./ubernet_100.pt"))

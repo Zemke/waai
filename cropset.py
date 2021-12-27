@@ -30,11 +30,34 @@ class CropSet(Dataset):
         img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
       x.append(T.ToTensor()(img))
 
+  def augment(self):
+    class AugmentSet(Dataset):
+      def __init__(self, default_transforms):
+        self.files = []
+        self.def_transf = default_transforms
+      def add(self, f, aug_transf):
+        self.files.append((f, aug_transf))
+      def __len__(self):
+        return len(self.files)
+      def __getitem__(self, idx):
+        return CropSet._getitem(
+          self.files[idx][0],
+          T.Compose([*self.def_transf.transforms, self.files[idx][1]]))
+
+    ds = AugmentSet(self.transform)
+    for f in self.files:
+      ds.add(f, T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)))
+    return self + ds
+
   def __len__(self):
     return len(self.files)
 
   def __getitem__(self, idx):
-    with open(self.files[idx], 'r') as f:
+    return self._getitem(self.files[idx], self.transform)
+
+  @staticmethod
+  def _getitem(file, transform):
+    with open(file, 'r') as f:
       j = json.loads(f.read())
     for doc in j:
       img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
@@ -45,7 +68,13 @@ class CropSet(Dataset):
         x1, y1, x2, y2 = x-width/2, y-height/2, x+width/2, y+height/2 
         boxes.append([x1, y1, x2, y2])
         labels.append(dataset.CLASSES.index(annot["label"]))
-    return self.transform(img), {
+    transed = transform(img)
+    # show augmentation
+    #if len(transform.transforms) > 1:
+    #  import matplotlib.pyplot as plt
+    #  plt.imshow(transed.permute((1,2,0)))
+    #  plt.show()
+    return transed, {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
