@@ -1,0 +1,1 @@
+[{"image": "infer7.png", "annotations": [{"label": "worm", "coordinates": {"x": 80.58433734939763, "y": 487.83132530120486, "width": 37.0, "height": 48.0}}, {"label": "mine", "coordinates": {"x": 108.08433734939763, "y": 155.33132530120486, "width": 28.0, "height": 25.0}}]}]
