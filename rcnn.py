@@ -158,7 +158,7 @@ if __name__ == '__main__':
     dl = cropset.load(cropset.CropSet(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
-    model.load_state_dict(torch.load("./ubernet_100.pt"))
+    #model.load_state_dict(torch.load("./ubernet_100.pt"))
     losses = train(model)
 
     if os.getenv('PLOTLOSS') == '1':
