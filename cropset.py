@@ -80,7 +80,8 @@ class CropSet(Dataset):
         else:
           crop_i,crop_j,*_ = crop_params
           box = [x1-crop_j, y1-crop_i, x2-crop_j, y2-crop_i]
-          if box[2] <= 0 or box[0] >= w or box[3] <= 0 or box[1] >= h:
+          if box[2] <= 0 or box[0] >= w or box[3] <= 0 or box[1] >= h \
+              or box[2]-box[0] < 11 or box[3]-box[1] < 11:
             continue
           box = [max(0,box[0]), max(0,box[1]), min(w,box[2]), min(h,box[3])]
         if flip:
