@@ -64,20 +64,31 @@ class CropSet(Dataset):
   def _getitem(file, transform, crop_params=None):
     with open(file, 'r') as f:
       j = json.loads(f.read())
+    flip = crop_params is None and torch.rand(1) < .3
     for doc in j:
       img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
+      transed = F.hflip(transform(img)) if flip else transform(img)
+      h,w = transed.shape[1:]
       boxes, labels = [], []
       for annot in doc["annotations"]:
         coord = annot["coordinates"]
         x, y, width, height = coord["x"], coord["y"], coord["width"], coord["height"]
         x1, y1, x2, y2 = x-width/2, y-height/2, x+width/2, y+height/2 
+        box = None
         if crop_params is None:
-          boxes.append([x1, y1, x2, y2])
+          box = [x1, y1, x2, y2]
         else:
           crop_i,crop_j,*_ = crop_params
-          boxes.append([x1-crop_j, y1-crop_i, x2-crop_j, y2-crop_i])
+          box = [x1-crop_j, y1-crop_i, x2-crop_j, y2-crop_i]
+          if box[2] <= 0 or box[0] >= w or box[3] <= 0 or box[1] >= h:
+            continue
+          box = [max(0,box[0]), max(0,box[1]), min(w,box[2]), min(h,box[3])]
+        if flip:
+          fliplist = list(range(w+1))[::-1]
+          box[0] = fliplist[int(box[0]+width)]
+          box[2] = fliplist[int(box[2]-width)]
+        boxes.append(box)
         labels.append(dataset.CLASSES.index(annot["label"]))
-    transed = transform(img)
     # show with bounding boxes
     #from torchvision.utils import draw_bounding_boxes
     #bb = draw_bounding_boxes(
@@ -85,7 +96,8 @@ class CropSet(Dataset):
     #  torch.as_tensor(boxes, dtype=torch.float),
     #  [dataset.CLASSES[label] for label in  labels])
     #import matplotlib.pyplot as plt
-    #plt.title(file + " - " + str(crop_params))
+    #assert len(labels) == len(boxes)
+    #plt.title(file  + " - " + str(crop_params is not None) + " - " + str(len(boxes)))
     #plt.imshow(bb.permute((1,2,0)))
     #plt.show()
     return transed, {
