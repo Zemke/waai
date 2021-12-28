@@ -51,7 +51,7 @@ class CropSet(Dataset):
       if f.split('/')[-1].startswith('hd_'):
         crop_params = T.RandomCrop.get_params(torch.zeros(1080,1920), (800,1000))  # i,j,th,tw
         ds.add(f, lambda img, crop_params=crop_params: F.crop(img, *crop_params), crop_params)
-      ds.add(f, T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)))
+      ds.add(f, T.GaussianBlur(kernel_size=(3, 7), sigma=(0.1, 3)))
     return self + ds
 
   def __len__(self):
