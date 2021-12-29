@@ -76,7 +76,7 @@ def train(model):
       losses.backward()
       optimizer.step()
 
-      r_loss += losses
+      r_loss += losses.item()
       log = False
       if (i+1) % STEP == 0:
         divisor = STEP
