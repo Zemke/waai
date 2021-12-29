@@ -61,7 +61,7 @@ def train(model):
 
   mlosses = []
   for epoch in trange(epochs, position=1):
-    if (epoch+1) % 120 == 0:
+    if (epoch+1) % 100 == 0:
       print("relax")
       sleep(10)  # GPU relaxation time
 
