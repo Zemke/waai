@@ -96,7 +96,7 @@ def plot_loss(losses):
   plt.figure(figsize=(15,10))
   ax = plt.plot(losses)
   plt.ylim(top=.6)
-  plt.show()
+  plt.savefig("lossplot.png")
 
 
 def infer(img, model):
