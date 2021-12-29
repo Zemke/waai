@@ -23,14 +23,6 @@ class CropSet(Dataset):
         if entry.is_file() and entry.name.lower().endswith('.json'):
           self.files.append(entry.path)
 
-    x = []
-    for idx in range(len(self.files)):
-      with open(self.files[idx], 'r') as f:
-        j = json.loads(f.read())
-      for doc in j:
-        img = Image.open(os.path.join("captures", doc["image"])).convert('RGB')
-      x.append(T.ToTensor()(img))
-
   def augment(self):
     class AugmentSet(Dataset):
       def __init__(self, default_transforms):
