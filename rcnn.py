@@ -151,6 +151,8 @@ def write_createml(targ_name, y, thres):
 
 if __name__ == '__main__':
   if len(sys.argv) <= 1:
+    env_plotloss = os.getenv('PLOTLOSS') == '1'
+    print("env_plotloss", env_plotloss)
     model = create_net()
 
     batch_size = os.getenv('BATCH', 4)
@@ -161,7 +163,7 @@ if __name__ == '__main__':
     #model.load_state_dict(torch.load("./ubernet_100.pt"))
     losses = train(model)
 
-    if os.getenv('PLOTLOSS') == '1':
+    if env_plotloss:
       plot_loss(losses)
 
     print('save to ./ubernet.pt? [Y/n]', end=' ')
