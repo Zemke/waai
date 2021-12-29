@@ -155,7 +155,7 @@ if __name__ == '__main__':
     print("env_plotloss", env_plotloss)
     model = create_net()
 
-    batch_size = os.getenv('BATCH', 4)
+    batch_size = int(os.getenv('BATCH', 4))
     print(f"batch_size is {batch_size}")
     dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
