@@ -54,6 +54,7 @@ def train(model):
   optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
 
   model.to(device)
+  model.train()
 
   STEP = 2
   epochs = int(os.getenv('EPOCHS', 200))
@@ -69,7 +70,7 @@ def train(model):
     for i, (img, l) in enumerate((progr := tqdm(dl, position=0))):
       img = list(i.to(device) for i in img)
       l = [{k: v.to(device) for k, v in t.items()} for t in l]
-      model.train()
+
       loss_dict = model(img, l)
       losses = sum(loss for loss in loss_dict.values())
       optimizer.zero_grad()
@@ -89,7 +90,7 @@ def train(model):
         progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f}")
         r_loss = 0.
 
-  return [i.detach().item() for i in mlosses]
+  return mlosses
 
 
 def plot_loss(losses):
