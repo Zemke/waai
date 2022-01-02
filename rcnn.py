@@ -106,18 +106,27 @@ def infer(img, model):
     return model(F.to_tensor(img).unsqueeze(0))[0]
 
 
-def plot_infer(y, img, thres):
+def draw_bb(y, img, thres):
   topk = y['scores'] > thres
-  plt.figure(figsize=(16,15))
-
   labels = [dataset.CLASSES[i] for i in y['labels'][topk]]
   bb = draw_bounding_boxes(
     (F.to_tensor(img)*255).to(torch.uint8),
     boxes=y['boxes'][topk],
     labels=labels)
-  plt.imshow(bb.permute(1,2,0))
+  return bb.permute(1,2,0).detach().numpy()
+
+def plot_infer(y, img, thres):
+  topk = y['scores'] > thres
+  plt.figure(figsize=(16,15))
+  labels = [dataset.CLASSES[i] for i in y['labels'][topk]]
+  plt.imshow(draw_bb(y, img, thres))
   plt.title(list(zip(torch.round(y['scores'][topk] * 100).to(int).tolist(), labels)))
   plt.show()
+
+
+def output_img(y, img, thres, dest):
+  img = Image.fromarray(draw_bb(y, img, thres))
+  return img.save(dest)
 
 
 def write_createml(targ_name, y, thres):
@@ -180,16 +189,26 @@ if __name__ == '__main__':
 
     model = pretrained(pretr_path)
     paths = sys.argv[2:]
-    for p in paths:
-      print('f', p)
+    output_dir = None
+    if os.path.isdir(paths[0]):
+      output_dir = paths[0]
+      paths = paths[1:]
+      print("outputting to path", output_dir)
+    #for p in paths:
+    #  print('f', p)
     for path in (progr := tqdm(paths)):
-      progr.set_description(path[-20:])
-      img = Image.open(path).convert('RGB')
-      y = infer(img, model)
-      thres = float(os.getenv('THRES', .8))
-      if len(paths) == 1 or os.getenv('PLOTINFER') == '1':
+      if output_dir is not None:
+        assert os.path.exists(output_dir)
+        dest = os.path.join(output_dir, os.path.basename(path))
+        if not os.path.exists(dest):
+          progr.set_description(path[-20:])
+          img = Image.open(path).convert('RGB')
+          y = infer(img, model)
+          thres = float(os.getenv('THRES', .8))
+          output_img(y, img, thres, dest)
+      elif len(paths) == 1 or os.getenv('PLOTINFER') == '1':
         print(f"threshold score is {thres}")
         plot_infer(y, img, thres)
-      if os.getenv('CREATEML') == '1':
-        write_createml(path.split('/')[-1][:-4], y, thres)
+        if os.getenv('CREATEML') == '1':
+          write_createml(path.split('/')[-1][:-4], y, thres)
 
