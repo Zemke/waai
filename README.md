@@ -1,8 +1,8 @@
 # WAAI
 
-Looks like we're starting off with Faster R-CNN with custom pretrained CNN backbone trained on dynamite, worm, mine and barrel classes.
+## [Faster R-CNN Object Recognition](https://waai.zemke.io/object-recognition)
 
-![Loss plot of 400 epochs](https://raw.githubusercontent.com/Zemke/waai/main/lossplot.png)
+![Object Recognition Bounding Boxes](https://raw.githubusercontent.com/Zemke/waai/main/internet/img/recog.png)
 
-[IN ACTION](https://www.youtube.com/watch?v=3sq1OArzWF8)
+[![Worms Armageddon Faster R-CNN Object Recognition](https://img.youtube.com/vi/3sq1OArzWF8/0.jpg)](https://www.youtube.com/watch?v=3sq1OArzWF8)
 
