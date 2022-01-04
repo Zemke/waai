@@ -1,0 +1,243 @@
+<div class="box center">
+  <h1>Faster R-CNN Object Recognition</h1>
+</div>
+<div class="box">
+  PyTorch Faster R-CNN implementation with custom CNN backbone trained on
+  worm, barrel, mine and dynamite object classes (plus background).
+</div>
+<div class="box center">
+  <h2>The Issue With Tiny Objects</h2>
+</div>
+<div class="box">
+  <p>
+  You’re most likely to play a game of Worms Armageddon at a resolution of 1920 by
+  1080. A worm, barrel, mine is going to take up only a small portion of that
+  screen. Also classification is a task of classifying a single image. Meaning it’s
+  an image of one thing and one thing only. <b>Multi-class classifiers classify
+  an image.</b>
+  </p>
+</div>
+
+<div class="box center">
+  <h2>Generating The Dataset</h2>
+</div>
+<div class="box">
+  <p>
+  The initial dataset—consisting of only dynamites—was generated using a binary
+  classifier and a tiling technique on game scene captures identifies by an
+  algorithm implemented in
+  <a href="https://waaas.zemke.io" target="_blank">WAaaS</a>.
+  </p>
+  <p>
+  Tiling a game captures and applying a linear classifier to output likelihood of
+  dynamite in image works surprisingly well. After all Worms is a 2D game and a
+  dynamite in the center of the image makes for strong weights of inputs with red
+  in the middle. So neurons with red which are located in the middle of the image
+  are going to have a high weight and are a clear enough indication for a dynamite.
+  </p>
+  <p class="center"><img src="/img/1000_0_30561.png"></p>
+  <p>
+  In the example capture one can see that captures were taken immediately at the
+  drop of the weapon and therefore a worm was always in the background.<br>
+  The following is an image with descending match rating of whether a dynamite
+  in the image or not.
+  </p>
+  <p class="center"><img src="/img/research.png"></p>
+  <p>
+  Very clearly the match rate for worms was too high. This requires the note that
+  the classifier was only trained on positive examples!<br>
+  When negative examples were added—especially the worms in this case—the
+  result improved drastically.<br>
+  It was then rather easy to generate a ton of images of dynamite use.
+  </p>
+  <p class="center"><img class="w100" src="/img/dynasdir.png"></p>
+  <p>
+  Linear binary dynamite classifier
+  </p>
+  <pre>
+SingleNet(
+  (flatten): Flatten(start_dim=1, end_dim=-1)
+  (fc): Sequential(
+    (0): Linear(in_features=1875, out_features=1000, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=1000, out_features=500, bias=True)
+    (3): ReLU()
+    (4): Linear(in_features=500, out_features=1, bias=True)
+  )
+)
+  </pre>
+</div>
+<div class="box center">
+  <h3>The Right Capture At The Right Moment</h3>
+</div>
+<div class="box">
+  <p>
+  How do I know when the dynamite was used in a game replay file to make a screen
+  shot just at the right time?
+  </p>
+	<p>
+  WA.exe boasts a lot of helpful
+  <a href="https://worms2d.info/Command-line_options" target="_blank">command-line parameters</a>.
+  </p>
+  <ol>
+    <li>Extract the log using WA.exe’s <code>/getlog</code></li>
+    <li>Process the log using <a href="https://github.com/Zemke/waaas/blob/a33575e8ef85bc460badec1c2df80e77a1250d1a/waaas.py" target="_blank">WAaaS script</a></li>
+    <li>Capture using WA.exe’s <code>/getvideo</code></li>
+  </ol>
+  <pre>
+#!/bin/bash
+
+ztosec () {
+  h=$(echo $1 | cut -c -2)  # 00
+  m=$(echo $1 | cut -c 4-5)  # 01
+  s=$(echo $1 | cut -c 7-) # 49.68
+  offset=.10
+  echo $(echo "$h*60*60+$m*60+$s+$offset" | bc)
+}
+
+zcapture () {
+  rm -r ~/.wine/drive_c/wa/User/Capture
+  export WINEDEBUG=fixme-all
+  wine 'C:\WA\WA.exe' /getvideo "$(winepath -w replays/$0.WAgame)" 1 $1 $1 800 640
+  capdir="/home/boggy/.wine/drive_c/wa/User/Capture/$0"
+  until [ -d "${capdir}" ]; do sleep .2; echo 'slept'; done
+  mkdir -p "data/dynamite/$0"
+  for f in "$capdir"/*; do
+    for i in $(seq 0 20); do
+      if [ ! -f "data/dynamite/$0/$i.png" ]; then
+        mv "$f" "data/dynamite/$0/$i.png"
+        echo "game $0 num $i"
+        break
+      fi
+    done
+  done
+}
+
+export -f ztosec
+export -f zcapture
+
+for f in logs/*; do
+  id=$(basename $f | rev | cut -c 5- | rev)
+  if [ -d "data/dynamite/$id" ]; then
+    echo "$id already done"
+    continue
+  else
+    echo "now $id"
+  fi
+  # [00:01:49.68]  Croatia (`WK-Tade-FB`) fires Dynamite
+  ts=$(grep -a 'fires Dynamite' < $f | cut -c 2-12 | xargs -I% bash -c 'ztosec %')
+  echo "$ts" | xargs -L1 -I% bash -c 'zcapture %' $id
+  echo "game $id done -- next log"
+done
+  </pre>
+</div>
+<div class="box center">
+  <h2>From Classification To Object Recognition</h2>
+</div>
+<div class="box">
+  The former description revolves around classifications of tiles of whole in-game
+  scenery. It was later updated to become a Convolution Neural Network.<br>
+  This CNN became the pretrained bacckbone of what was to become a solution taking
+  advantage of PyTorch’s Faster R-CNN implementation.
+</div>
+<div class="box">
+  <img src="/img/recog.png" class="w100">
+</div>
+<div class="box">
+  <p>
+  The final Faster R-CNN model with a custom CNN backbone.
+  </p>
+  <pre>
+FasterRCNN(
+  (transform): GeneralizedRCNNTransform(
+      Normalize(mean=(0.4134, 0.3193, 0.2627), std=(0.3083, 0.2615, 0.2476))
+      Resize(min_size=(640,), max_size=1920, mode='bilinear')
+  )
+  (backbone): Sequential(
+    (0): Conv2d(3, 12, kernel_size=(2, 2), stride=(1, 1))
+    (1): ReLU(inplace=True)
+    (2): Conv2d(12, 20, kernel_size=(2, 2), stride=(1, 1))
+    (3): ReLU(inplace=True)
+    (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (rpn): RegionProposalNetwork(
+    (anchor_generator): AnchorGenerator()
+    (head): RPNHead(
+      (conv): Conv2d(20, 20, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (cls_logits): Conv2d(20, 6, kernel_size=(1, 1), stride=(1, 1))
+      (bbox_pred): Conv2d(20, 24, kernel_size=(1, 1), stride=(1, 1))
+    )
+  )
+  (roi_heads): RoIHeads(
+    (box_roi_pool): MultiScaleRoIAlign(featmap_names=['0'], output_size=(15, 15), sampling_ratio=1)
+    (box_head): TwoMLPHead(
+      (fc6): Linear(in_features=4500, out_features=1024, bias=True)
+      (fc7): Linear(in_features=1024, out_features=1024, bias=True)
+    )
+    (box_predictor): FastRCNNPredictor(
+      (cls_score): Linear(in_features=1024, out_features=5, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=20, bias=True)
+    )
+  )
+)
+  </pre>
+</div>
+<div class="box center">
+  <h3>PyTorch Faster R-CNN Caveats</h3>
+</div>
+<div class="box">
+  <p>
+		Throughout the whole project it became clear that standardization (z-score)
+    performs much better and just re-scaling. Therefore the mean and standard
+    deviation of the origin data image set is used to train the whole Faster R-CNN
+    architecture. That’s to say, this is not the mean and std of the what’s fed
+    into the Faster R-CNN.
+  </p>
+  <p>
+	<pre>
+FasterRCNN(
+	backbone, num_classes=num_classes,
+	image_mean=dataset.MEAN, image_std=dataset.STD,
+	min_size=640, max_size=1920,
+	rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler)
+	</pre>
+  </p>
+  <p>
+  Their use of resizing inside Faster R-CNN will be so that it keeps the
+  aspect ratio of the image with <code>max_size</code> and <code>min_size</code>
+  as upper and lower bounds.
+  </p>
+</div>
+<div class="box center">
+  <h2>Perfecting</h2>
+</div>
+<div class="box">
+  <a href="https://github.com/tzutalin/labelImg" target="_blank">labelImg</a>
+  has been a great help.
+  When inferencing as a side effect the results are generated in CreateML format
+  which is readable by labelImg. So every inferencing result is new data for the
+  model and can be easily fixed with labelImg in case for prediction errors.<br>
+  The positive side effect is that the fixes will specifically improve what the
+  current model was bad at.
+</div>
+<div class="box">
+  <p>
+  The matplotlib <code>ylim</code>ed loss plot of 400 (or maybe 500) epochs.
+  </p>
+  <p><img src="/img/lossplot.png" class="w100"></p>
+</div>
+<div class="box center">
+  <h2>Final</h2>
+</div>
+<div class="box center">
+  <a href="https://github.com/Zemke/waai/" target="_blank">GitHub</a>
+</div>
+<div class="box">
+  <iframe class="embed"
+          src="https://www.youtube-nocookie.com/embed/3sq1OArzWF8"
+          title="YouTube video player"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+</div>
+
