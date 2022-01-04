@@ -27,7 +27,7 @@ print(f"device is {device}")
 
 
 def create_net():
-  net = multinet.pretrained("./model_multinet.pt")
+  net = multinet.MultiNet(len(dataset.CLASSES))
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features
@@ -194,8 +194,8 @@ if __name__ == '__main__':
       output_dir = paths[0]
       paths = paths[1:]
       print("outputting to path", output_dir)
-    #for p in paths:
-    #  print('f', p)
+    thres = float(os.getenv('THRES', .8))
+    print(f"threshold score is {thres}")
     for path in (progr := tqdm(paths)):
       if output_dir is not None:
         assert os.path.exists(output_dir)
@@ -204,10 +204,12 @@ if __name__ == '__main__':
           progr.set_description(path[-20:])
           img = Image.open(path).convert('RGB')
           y = infer(img, model)
-          thres = float(os.getenv('THRES', .8))
           output_img(y, img, thres, dest)
       elif len(paths) == 1 or os.getenv('PLOTINFER') == '1':
-        print(f"threshold score is {thres}")
+        for p in paths:
+          print('f', p)
+        img = Image.open(path).convert('RGB')
+        y = infer(img, model)
         plot_infer(y, img, thres)
         if os.getenv('CREATEML') == '1':
           write_createml(path.split('/')[-1][:-4], y, thres)
