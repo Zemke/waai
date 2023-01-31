@@ -87,7 +87,7 @@ class Runner:
         if isinstance(topn, int):
           top, topargs = visual.topk(dl.dataset.tiles, yy, topn)
         else:
-          top, topargs = visual.topprob(dl.dataset.tiles, sidmoid(yy), topn)
+          top, topargs = visual.topprob(dl.dataset.tiles, sigmoid(yy), topn)
         for i in range(len(top)):
           ts = round(time() * 1000000)
           score = round(sigmoid(yy[topargs[i]]) * 10000)
