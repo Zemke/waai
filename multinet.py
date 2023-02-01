@@ -12,8 +12,10 @@ from tqdm import tqdm
 STEP = 300
 EPOCHS = 10
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
+device = torch.device(
+  'cuda:0' if torch.cuda.is_available() else
+  'mps' if torch.backends.mps.is_available() else
+  'cpu')
 
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
