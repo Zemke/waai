@@ -13,24 +13,40 @@ import numpy as np
 STEP = 10
 EPOCHS = 18
 
+device = torch.device(
+  'cuda:0' if torch.cuda.is_available() else
+  'mps' if torch.backends.mps.is_available() else
+  'cpu')
 
 class SingleNet(nn.Module):
   def __init__(self):
     super().__init__()
-    self.flatten = nn.Flatten()
-    self.fc = nn.Sequential(
-      nn.Linear(1875, 1000),
-      nn.ReLU(),
-      nn.Linear(1000, 500),
-      nn.ReLU(),
-      nn.Linear(500, 1),
+    self.features = nn.Sequential(
+        nn.Conv2d(3, 12, 2),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(12, 20, 2),
+        nn.ReLU(inplace=True),
+        nn.MaxPool2d(2, 2),
+    )
+    self.classifier = nn.Sequential(
+        nn.Dropout(p=.5),
+        nn.Linear(3920, 2600),
+        nn.ReLU(inplace=True),
+        nn.Linear(2600, 1000),
+        nn.ReLU(inplace=True),
+        nn.Linear(1000, 1),
     )
 
-  def forward(self, x):
-    x = self.flatten(x)
-    x = self.fc(x)
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    x = self.features(x)
+    x = torch.flatten(x, 1)
+    x = self.classifier(x)
     return x
 
+  def device(self):
+    self.to(device)
+    print(f"moved net to {device}")
+    return self
 
 def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
   net.train(train)
@@ -46,6 +62,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
   for i, (b, l) in enumerate(progr):
     if train:
       optim.zero_grad()
+
+    b, l = b.to(device), l.to(device)
 
     y = net(b)
     loss = loss_fn(y.view(-1), l)

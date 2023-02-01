@@ -26,8 +26,7 @@ class Runner:
     self.epochs = multinet.EPOCHS if self.multi else singlenet.EPOCHS
   
   def pretrained(self, path):
-    self.net = multinet.pretrained(path) if self.multi else singlenet.pretrained(path)
-
+    self.net = multinet.pretrained(path) if self.multi else singlenet.pretrained(path).device()
     print(f'using existing model {path}')
     return self.net
 
@@ -46,7 +45,7 @@ class Runner:
     if self.multi:
       self.net = multinet.MultiNet(len(dataset.CLASSES))
     else:
-      self.net = singlenet.SingleNet()
+      self.net = singlenet.SingleNet().device()
     return self.net
 
   def train(self, dl_train, dl_test):
