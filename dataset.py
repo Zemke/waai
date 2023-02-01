@@ -14,7 +14,7 @@ import pandas as pd
 import visual
 
 
-CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
+CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 
 
@@ -138,6 +138,10 @@ class MultiSet(Dataset):
           aug_ds.add(path, label, T.Pad(i))
       elif clazz == 'dynamite':
         aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
+      elif clazz == 'sheep':
+        for _ in range(10):
+          aug_ds.add(path, label, T.RandomHorizontalFlip(p=.5))
+          aug_ds.add(path, label, T.RandomAffine(0, translate=(.2,.2)))
 
     return self + aug_ds
 
