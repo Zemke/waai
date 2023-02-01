@@ -5,7 +5,7 @@ from math import ceil, floor
 
 import torch
 from torch.utils.data import \
-    Dataset, DataLoader, ConcatDataset, random_split
+    Dataset, DataLoader, ConcatDataset, random_split, Subset
 import torchvision.transforms as T
 
 from PIL import Image
@@ -21,12 +21,28 @@ MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 class SingleSet(Dataset):
   @torch.no_grad()
   def __init__(self,
+               single,
+               label=1.,
                annotations_file='./dataset/annot.csv',
+               transform=None,
                img_dir='./dataset'):
     df = pd.read_csv(annotations_file)
-    self.img_labels = df[df["label"].isin([CLASSES.index('dynamite'), -1])]
+    self.label = label
+    self.img_labels = df[df["label"].isin([CLASSES.index(single), -1])]
     self.img_dir = img_dir
-    self.transform = T.ToTensor()
+    self.transform = T.Compose([
+      T.ToTensor(),
+      T.Resize((30,30)),
+      *([] if transform is None else transform)
+      # TODO Normalize
+    ])
+
+  def augment(self):
+    return ConcatDataset([
+      self,
+      SingleSet('sheep', transform=[T.RandomHorizontalFlip(p=1)]),
+      Subset(SingleSet('bg', label=0.), list(range(int(len(self) * 2 * 1.1))))
+    ])
 
   def __len__(self):
     return len(self.img_labels)
@@ -35,7 +51,7 @@ class SingleSet(Dataset):
     img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
     image = Image.open(img_path)
     # image = read_image(img_path) pytorch/vision#4181
-    return self.transform(image), float(self.img_labels.iloc[idx, 1])
+    return self.transform(image), self.label
 
 
 class CaptureSet(Dataset):

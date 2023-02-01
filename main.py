@@ -38,7 +38,7 @@ class Runner:
             f"std:{self.ds.datasets[0].std}")
       print(f"training on classes: {dataset.CLASSES}")
     else:
-      self.ds = dataset.SingleSet()
+      self.ds = dataset.SingleSet('sheep').augment()
       print("binary classification")
     return self.ds
 
