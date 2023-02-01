@@ -35,7 +35,7 @@ def topk(aa, rr, k=100):
 
 def topprob(aa, rr, prob=.5):
   res = []
-  sargs = np.argsort(rr)[::-1]
+  sargs = (-rr).argsort()
   for i in range(len(sargs)):
     if rr[sargs[i]] > prob:
       res.append(aa[sargs[i]])

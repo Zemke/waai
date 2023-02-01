@@ -57,9 +57,12 @@ class SingleSet(Dataset):
 class CaptureSet(Dataset):
   @torch.no_grad()
   def __init__(self, path):
-    img = visual.load(path)[50:-75, 50:-50,:]
-    self.tiles = visual.tile(img)
-    self.transform = T.ToTensor()
+    img = visual.load(path)[150:-375, 150:-150,:]
+    self.tiles = visual.tile(img, kernel=33)
+    self.transform = T.Compose([
+      T.ToTensor(),
+      T.Resize((30,30)),
+    ])
 
   @torch.no_grad()
   def __len__(self):

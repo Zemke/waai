@@ -69,10 +69,10 @@ class Runner:
 
   def pred_capture(self, paths, target_dir, topn):
     for i in trange(len(paths)):
-      dl = dataset.load(
-          dataset.CaptureMultiSet(
-              paths[i]), batch_size=800*640, shuffle=False)
       if self.multi:
+        dl = dataset.load(
+            dataset.CaptureMultiSet(
+                paths[i]), batch_size=800*640, shuffle=False)
         preds = multinet.pred_capture(self.net, dl)
         argsorted = preds.argsort(axis=0)
         for ci in range(1, len(dataset.CLASSES)):
@@ -83,6 +83,9 @@ class Runner:
                 dl.dataset.tiles[toparg], target_dir,
                 f"{dataset.CLASSES[ci]}_{score}_{ts}.png")
       else:
+        dl = dataset.load(
+            dataset.CaptureSet(
+                paths[i]), batch_size=64*2, shuffle=False)
         yy = singlenet.pred_capture(self.net, dl)
         if isinstance(topn, int):
           top, topargs = visual.topk(dl.dataset.tiles, yy, topn)

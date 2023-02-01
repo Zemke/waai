@@ -114,19 +114,20 @@ def train(net, dl_train, dl_valid=None):
 
 @torch.no_grad()
 def pred_capture(net, dl):
-  res = []
-  for i, b in enumerate(dl):
-    net.eval()
-    y = net(b)
-    res.extend(y.squeeze().detach().numpy())
-  return res
-
+  res = torch.tensor([], device=device)
+  with tqdm(total=len(dl), leave=False) as bar:
+    for i, b in enumerate(dl):
+      net.eval()
+      y = net(b.to(device))
+      res = torch.cat([res, y.squeeze().detach()])
+      bar.update()
+  return res.cpu().numpy()
 
 @torch.no_grad()
 def pred(net, img):
   res = []
   net.eval()
-  r = net(F.to_tensor(img).unsqueeze(0))
+  r = net(F.resize(F.to_tensor(img), (30, 30)).unsqueeze(0))
   res.append(r.squeeze().item())
   return res
 
