@@ -22,14 +22,21 @@ class SingleSet(Dataset):
   @torch.no_grad()
   def __init__(self,
                single,
-               label=1.,
                annotations_file='./dataset/annot.csv',
                transform=None,
                img_dir='./dataset'):
-    df = pd.read_csv(annotations_file)
-    self.label = label
-    self.img_labels = df[df["label"].isin([CLASSES.index(single), -1])]
+    self.single = single
     self.img_dir = img_dir
+
+    # file,label
+    # 1_worm/1/117_0_25683_16385455696357.png,5
+    clazz = CLASSES.index(single)
+    df = pd.read_csv(annotations_file)
+    df = df[df["file"].str.startswith(f"{clazz}_")]
+    df.loc[df["label"] == clazz, "label"] = 1
+    df.reset_index(inplace=True, drop=True)
+    self.df = df
+
     self.transform = T.Compose([
       T.ToTensor(),
       T.Resize((30,30)),
@@ -38,20 +45,16 @@ class SingleSet(Dataset):
     ])
 
   def augment(self):
-    return ConcatDataset([
-      self,
-      SingleSet('sheep', transform=[T.RandomHorizontalFlip(p=1)]),
-      Subset(SingleSet('bg', label=0.), list(range(int(len(self) * 2 * 1.1))))
-    ])
+    return self + SingleSet(self.single, transform=[T.RandomHorizontalFlip(p=1)])
 
   def __len__(self):
-    return len(self.img_labels)
+    return len(self.df)
 
   def __getitem__(self, idx):
-    img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-    image = Image.open(img_path)
+    file, label = self.df.iloc[idx]
+    image = Image.open(os.path.join(self.img_dir, file))
     # image = read_image(img_path) pytorch/vision#4181
-    return self.transform(image), self.label
+    return self.transform(image), torch.tensor(label, dtype=torch.float32)
 
 
 class CaptureSet(Dataset):
