@@ -1,5 +1,4 @@
-dataset/*/*.png
-dataset/annot.csv
+dataset/*
 
 fooling.ipynb
 labelling/source

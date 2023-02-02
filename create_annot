@@ -2,17 +2,17 @@
 
 cd dataset
 echo "file,label" > annot.csv
-find bg/* | xargs -I% -n1 echo %,0 >> annot.csv
-find worm/* | xargs -I% -n1 echo %,1 >> annot.csv
-find mine/* | xargs -I% -n1 echo %,2 >> annot.csv
-find barrel/* | xargs -I% -n1 echo %,3 >> annot.csv
-find dynamite/* | xargs -I% -n1 echo %,4 >> annot.csv
-find sheep/* | xargs -I% -n1 echo %,5 >> annot.csv
 
-echo bg: $(find bg/* | wc -l)
-echo worm: $(find worm/* | wc -l)
-echo mine: $(find mine/* | wc -l)
-echo barrel: $(find barrel/* | wc -l)
-echo dynamite: $(find dynamite/* | wc -l)
-echo sheep: $(find sheep/* | wc -l)
+echo 'class_weapon positive negative'
+for f in $(find * -type d -maxdepth 0); do
+  class=$(echo $f | cut -d '_' -f 1)
+
+  pos=$(find "${f}/1" | xargs -I% -n1 echo "%,${class}")
+  echo "$pos" >> annot.csv
+
+  neg=$(find "${f}/0" | xargs -I% -n1 echo '%,0')
+  echo "$neg" >> annot.csv
+
+  echo "$f" $(echo "$pos" | wc -l) $(echo "$neg" | wc -l)
+done
 
