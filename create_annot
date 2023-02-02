@@ -7,10 +7,10 @@ echo 'class_weapon positive negative'
 for f in $(find * -type d -maxdepth 0); do
   class=$(echo $f | cut -d '_' -f 1)
 
-  pos=$(find "${f}/1" | xargs -I% -n1 echo "%,${class}")
+  pos=$(find ${f}/1/* | xargs -I% -n1 echo "%,${class}")
   echo "$pos" >> annot.csv
 
-  neg=$(find "${f}/0" | xargs -I% -n1 echo '%,0')
+  neg=$(find ${f}/0/* | xargs -I% -n1 echo '%,0')
   echo "$neg" >> annot.csv
 
   echo "$f" $(echo "$pos" | wc -l) $(echo "$neg" | wc -l)
