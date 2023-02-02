@@ -16,3 +16,5 @@ for f in $(find * -type d -maxdepth 0); do
   echo "$f" $(echo "$pos" | wc -l) $(echo "$neg" | wc -l)
 done
 
+echo 'totals' $(find */1/* | wc -l) $(find */0/* | wc -l)
+
