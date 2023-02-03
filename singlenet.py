@@ -54,7 +54,9 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
   losses, accs = [], []
   losses_val, accs_val = [], []
-  running_loss, running_acc = 0., 0.
+  running_loss, running_acc = \
+    torch.tensor(0., device=device), \
+    torch.tensor(0., device=device)
   progr = tqdm(dl,
                leave=train,
                colour='yellow' if train else 'green',
@@ -92,9 +94,11 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       stepped = True
 
     if stepped:
-      losses.append(running_loss/divisor)
-      accs.append(running_acc/divisor)
-      running_loss, running_acc = 0., 0.
+      losses.append((running_loss / divisor).cpu())
+      accs.append((running_acc / divisor).cpu())
+      running_loss, running_acc = \
+        torch.tensor(0., device=device), \
+        torch.tensor(0., device=device)
       if train and os.environ.get("TRAINONLY") != '1':
         with torch.no_grad():
           validres = _do(net, dl_train, dl_valid, loss_fn, None)
