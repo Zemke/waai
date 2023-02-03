@@ -145,7 +145,7 @@ def pred_capture(net, dl):
 def pred(net, img):
   res = []
   net.eval()
-  r = net(F.resize(F.to_tensor(img), (30, 30)).unsqueeze(0))
+  r = net(F.resize(F.to_tensor(img), (30, 30)).unsqueeze(0).to(device))
   res.append(r.squeeze().item())
   return res
 
