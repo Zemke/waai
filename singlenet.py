@@ -74,15 +74,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       loss.backward()
       optim.step()
 
-    # accuracy
-    y_sigmoid = nn.Sigmoid()(y.squeeze())
-    stck = torch.stack((l, y_sigmoid.view(-1)), 1).detach().numpy()
-    stck = np.diff(stck).reshape(-1) - 1
-    stck[stck < -1] += 2
-    acc = np.abs(stck).sum() / len(b)
-
-    running_loss += loss.item()
-    running_acc += acc
+    running_loss += loss.detach()
+    running_acc += 1 - ((torch.sigmoid(y.detach().squeeze()) - l).abs().sum() / len(l))
 
     stepped = False
     step_mod = (i+1) % STEP
