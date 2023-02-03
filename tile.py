@@ -16,7 +16,7 @@ if __name__ == '__main__':
   for f in os.listdir(DIR):
     if not f.lower().endswith('.png'):
       continue
-    img = visual.load(os.path.join(DIR, f))
+    img = cv.imread((os.path.join(DIR, f), 0)
     tiles = visual.tile(img, kernel=30, stride=15)
     for i, tile in enumerate(tiles):
       if cv2.countNonZero(tile) >= 100:
