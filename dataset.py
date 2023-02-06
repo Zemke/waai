@@ -6,6 +6,7 @@ from math import ceil, floor
 import torch
 from torch.utils.data import \
     Dataset, DataLoader, ConcatDataset, random_split, Subset
+from torchvision.io import read_image, ImageReadMode
 import torchvision.transforms as T
 
 from PIL import Image
@@ -16,45 +17,93 @@ import visual
 
 CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
+MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
+C, W, H = 3, 30, 30
 
 
-class SingleSet(Dataset):
-  @torch.no_grad()
+class BgSet(Dataset):
   def __init__(self,
-               single,
+               length,
                annotations_file='./dataset/annot.csv',
-               transform=None,
                img_dir='./dataset'):
-    self.single = single
     self.img_dir = img_dir
 
-    # file,label
-    # 1_worm/1/117_0_25683_16385455696357.png,5
-    clazz = CLASSES.index(single)
     df = pd.read_csv(annotations_file)
-    df = df[df["file"].str.startswith(f"{clazz}_")]
-    df.loc[df["label"] == clazz, "label"] = 1
+    df = df[df["label"] == 0]
+    dfm = pd.concat([df[df["file"].str.fullmatch(f"0_bg/{m}_[0-9]+.png")] for m in MAPS])
+    dfo = df.drop(dfm.index)
+    dfm.sort_values(by=["file"], inplace=True)
+    if length > len(dfo):
+      dfm = dfm[::round((len(df)) / (length - len(dfo)))]
+    else:
+      print(f"WARN: Less than {len(dfo)} positive samples")
+      dfm = dfm[1000:1000+1]
+    df = pd.concat([dfo, dfm])
     df.reset_index(inplace=True, drop=True)
     self.df = df
 
     self.transform = T.Compose([
+      T.ToPILImage("RGB"),
+      T.Resize((H, W)),
       T.ToTensor(),
-      T.Resize((30,30)),
-      *([] if transform is None else transform)
-      # TODO Normalize
     ])
-
-  def augment(self):
-    return self + SingleSet(self.single, transform=[T.RandomHorizontalFlip(p=1)])
 
   def __len__(self):
     return len(self.df)
 
   def __getitem__(self, idx):
     file, label = self.df.iloc[idx]
-    image = Image.open(os.path.join(self.img_dir, file))
-    # image = read_image(img_path) pytorch/vision#4181
-    return self.transform(image), torch.tensor(label, dtype=torch.float32)
+    return \
+      self.transform(read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)), \
+      torch.tensor(label, dtype=torch.float32)
+
+
+class SingleSet(Dataset):
+  def __init__(self,
+               single,
+               df=None,
+               annotations_file='./dataset/annot.csv',
+               transform=None,
+               img_dir='./dataset'):
+    self.single = single
+    self.img_dir = img_dir
+
+    if df is None:
+      clazz = CLASSES.index(single)
+      df = pd.read_csv(annotations_file)
+      df = df[df["label"] == clazz]
+      df.loc[df["label"] == clazz, "label"] = 1
+      df.reset_index(inplace=True, drop=True)
+    self.df = df
+
+    self.transform = T.Compose([
+      T.ToPILImage("RGB"),
+      T.Resize((H, W)),
+      T.ToTensor(),
+      *([] if transform is None else transform)
+      # TODO Normalize
+    ])
+
+  def augment(self, bg=True):
+    augs = [self]
+    if self.single == 'sheep':
+      transforms = [T.RandomHorizontalFlip(p=1), T.RandomAffine(0, translate=(.2,.2))]
+    for t in transforms:
+      # shared dataframes
+      augs.append(SingleSet(self.single, df=self.df, transform=[t]))
+    if bg:
+      augs.append(BgSet(sum(len(ds) for ds in augs)))
+    return ConcatDataset(augs)
+
+  def __len__(self):
+    return len(self.df)
+
+  def __getitem__(self, idx):
+    file, label = self.df.iloc[idx]
+    print(os.path.join(self.img_dir, file))
+    return \
+      self.transform(read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)), \
+      torch.tensor(label, dtype=torch.float32)
 
 
 class CaptureSet(Dataset):

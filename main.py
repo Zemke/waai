@@ -37,6 +37,7 @@ class Runner:
             f"std:{self.ds.datasets[0].std}")
       print(f"training on classes: {dataset.CLASSES}")
     else:
+      # TODO Supply single (sheep) as env variable otherwise default to MULTI=1
       self.ds = dataset.SingleSet('sheep').augment()
       print("binary classification")
     return self.ds
@@ -146,10 +147,8 @@ if __name__ == "__main__":
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
-      dl_train, dl_test = dataset.load(ds_train), dataset.load(ds_test)
-    else:
-      dl_train, dl_test = dataset.load(data), None
-    if os.environ.get('LOGSPLIT'):
+      BS = 16
+      dl_train, dl_test = dataset.load(ds_train, batch_size=BS), dataset.load(ds_test, batch_size=BS)
       for dl in [dl_train, dl_test]:
         if dl is None:
           continue
@@ -158,6 +157,8 @@ if __name__ == "__main__":
           for ci in range(len(dataset.CLASSES)):
             c[ci] += len(l[l == ci])
         print('split class seed:', c)
+    else:
+      dl_train, dl_test = dataset.load(data), None
     trainres, validres = runner.train(dl_train, dl_test)
     if os.environ.get("TRAINONLY") != '1':
       visual.plt_res(trainres, validres, runner.epochs)

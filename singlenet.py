@@ -10,8 +10,8 @@ from tqdm import trange, tqdm
 import numpy as np
 
 
-STEP = 10
-EPOCHS = 18
+STEP = 15
+EPOCHS = 11
 
 device = torch.device(
   'cuda:0' if torch.cuda.is_available() else
