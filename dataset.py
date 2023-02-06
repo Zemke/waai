@@ -6,6 +6,7 @@ from math import ceil, floor
 import torch
 from torch.utils.data import \
     Dataset, DataLoader, ConcatDataset, random_split, Subset
+from torchvision.io import read_image, ImageReadMode
 import torchvision.transforms as T
 
 from PIL import Image
@@ -16,6 +17,8 @@ import visual
 
 CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
+MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
+C, W, H = 3, 30, 30
 
 
 class SingleSet(Dataset):
@@ -28,18 +31,17 @@ class SingleSet(Dataset):
     self.single = single
     self.img_dir = img_dir
 
-    # file,label
-    # 1_worm/1/117_0_25683_16385455696357.png,5
     clazz = CLASSES.index(single)
     df = pd.read_csv(annotations_file)
-    df = df[df["file"].str.startswith(f"{clazz}_")]
+    df = df[df["label"] == clazz]
     df.loc[df["label"] == clazz, "label"] = 1
     df.reset_index(inplace=True, drop=True)
     self.df = df
 
     self.transform = T.Compose([
+      T.ToPILImage("RGB"),
+      T.Resize((H, W)),
       T.ToTensor(),
-      T.Resize((30,30)),
       *([] if transform is None else transform)
       # TODO Normalize
     ])
@@ -52,9 +54,9 @@ class SingleSet(Dataset):
 
   def __getitem__(self, idx):
     file, label = self.df.iloc[idx]
-    image = Image.open(os.path.join(self.img_dir, file))
-    # image = read_image(img_path) pytorch/vision#4181
-    return self.transform(image), torch.tensor(label, dtype=torch.float32)
+    return \
+      self.transform(read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)), \
+      torch.tensor(label, dtype=torch.float32)
 
 
 class CaptureSet(Dataset):
