@@ -7,7 +7,7 @@ tot=0
 echo 'class_weapon positive negative'
 for f in $(find * -type d -maxdepth 0); do
   class=$(echo $f | cut -d '_' -f 1)
-  pos=$(find ${f} -type f | xargs -I% -n1 echo "%,${class}")
+  pos=$(find ${f} -type f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "%,${class}")
   echo "$pos" >> annot.csv
   c=$(echo "$pos" | wc -l)
   echo $f $c
