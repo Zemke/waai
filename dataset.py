@@ -25,17 +25,19 @@ class SingleSet(Dataset):
   @torch.no_grad()
   def __init__(self,
                single,
+               df=None,
                annotations_file='./dataset/annot.csv',
                transform=None,
                img_dir='./dataset'):
     self.single = single
     self.img_dir = img_dir
 
-    clazz = CLASSES.index(single)
-    df = pd.read_csv(annotations_file)
-    df = df[df["label"] == clazz]
-    df.loc[df["label"] == clazz, "label"] = 1
-    df.reset_index(inplace=True, drop=True)
+    if df is None:
+      clazz = CLASSES.index(single)
+      df = pd.read_csv(annotations_file)
+      df = df[df["label"] == clazz]
+      df.loc[df["label"] == clazz, "label"] = int(bool(clazz))
+      df.reset_index(inplace=True, drop=True)
     self.df = df
 
     self.transform = T.Compose([
@@ -46,8 +48,27 @@ class SingleSet(Dataset):
       # TODO Normalize
     ])
 
-  def augment(self):
-    return self + SingleSet(self.single, transform=[T.RandomHorizontalFlip(p=1)])
+  def augment(self, bg=False) -> ConcatDataset:
+    # shared dataframe (df)
+    augs = [
+      self,
+      SingleSet(self.single, df=self.df, transform=[T.RandomHorizontalFlip(p=1)]),
+      SingleSet(self.single, df=self.df, transform=[
+          T.RandomAffine(0, translate=(.2,.2)),
+          T.RandomHorizontalFlip(p=.5),
+        ]),
+    ]
+    if bg:
+      augs.append(SingleSet('bg'))
+    return ConcatDataset(augs)
+
+  def count(self):
+    return {self.single: cnt.item() for clazz,cnt in dict(self.df["label"].value_counts()).items()}
+
+  @staticmethod
+  def count_cum(dss: ConcatDataset):
+    ab = [ds.count() for ds in dss.datasets]
+    return {k: sum(x[k] if k in x else 0 for x in ab) for k in {x for y in ab for x in y}}
 
   def __len__(self):
     return len(self.df)

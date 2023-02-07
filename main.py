@@ -38,8 +38,9 @@ class Runner:
       print(f"training on classes: {dataset.CLASSES}")
     else:
       # TODO Supply single (sheep) as env variable otherwise default to MULTI=1
-      self.ds = dataset.SingleSet('sheep').augment()
+      self.ds = dataset.SingleSet('sheep').augment(bg=True)
       print("binary classification")
+      print(dataset.SingleSet.count_cum(self.ds))
     return self.ds
 
   def net(self):
