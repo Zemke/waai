@@ -4,6 +4,7 @@ import os
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from tqdm import trange, tqdm
 import numpy as np
@@ -20,27 +21,22 @@ device = torch.device(
 class SingleNet(nn.Module):
   def __init__(self):
     super().__init__()
-    self.features = nn.Sequential(
-        nn.Conv2d(3, 12, 2),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(12, 20, 2),
-        nn.ReLU(inplace=True),
-        nn.MaxPool2d(2, 2),
-    )
-    self.classifier = nn.Sequential(
-        nn.Dropout(p=.5),
-        nn.Linear(3920, 2600),
-        nn.ReLU(inplace=True),
-        nn.Linear(2600, 1000),
-        nn.ReLU(inplace=True),
-        nn.Linear(1000, 1),
-    )
+    self.conv1 = nn.Conv2d(3, 6, 5)
+    self.pool = nn.MaxPool2d(2, 2)
+    self.conv2 = nn.Conv2d(6, 16, 5)
+    self.fc1 = nn.Linear(16 * 4 * 4, 120)
+    self.fc2 = nn.Linear(120, 84)
+    self.fc3 = nn.Linear(84, 1)
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = self.features(x)
-    x = torch.flatten(x, 1)
-    x = self.classifier(x)
+    x = self.pool(nn.functional.relu(self.conv1(x)))
+    x = self.pool(nn.functional.relu(self.conv2(x)))
+    x = torch.flatten(x, 1)  # flatten all dimensions except batch
+    x = F.relu(self.fc1(x))
+    x = F.relu(self.fc2(x))
+    x = self.fc3(x)
     return x
+
 
   def device(self):
     self.to(device)
@@ -109,7 +105,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
-  optim = torch.optim.Adam(net.parameters(), lr=1e-5)
+  optim = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
   loss_fn = nn.BCEWithLogitsLoss()
 
   trainloss, trainacc = [], []
