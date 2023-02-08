@@ -59,13 +59,14 @@ class Runner:
     return multinet.save(*args) if self.multi else singlenet.save(*args)
     
   def pred(self):
+    x = dataset.transform(fromstdin)
     if self.multi:
-      y = multinet.pred(net, fromstdin)
+      y = multinet.pred(net, x)
       argmax = np.argmax(y)
       print(y, argmax)
       return dataset.CLASSES[argmax], sigmoid(y[argmax])
     else:
-      return sigmoid(singlenet.pred(net, fromstdin)[0])
+      return sigmoid(singlenet.pred(net, x))
 
 
   def pred_capture(self, paths, target_dir, topn):

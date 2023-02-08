@@ -19,6 +19,7 @@ CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
 C, W, H = 3, 30, 30
+TRANSFORMS = [T.ToTensor(), T.Resize((H, W))]
 
 
 class SingleSet(Dataset):
@@ -42,8 +43,7 @@ class SingleSet(Dataset):
 
     self.transform = T.Compose([
       T.ToPILImage("RGB"),
-      T.Resize((H, W)),
-      T.ToTensor(),
+      *TRANSFORMS,
       *([] if transform is None else transform)
       # TODO Normalize
     ])
@@ -211,4 +211,7 @@ def splitset(ds):
 
 def load(dataset, batch_size=8, shuffle=True):
   return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+def transform(x):
+  return T.Compose(TRANSFORMS)(x)
 

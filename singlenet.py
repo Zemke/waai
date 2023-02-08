@@ -4,7 +4,6 @@ import os
 
 import torch
 from torch import nn
-from torchvision.transforms import functional as F
 
 from tqdm import trange, tqdm
 import numpy as np
@@ -140,16 +139,11 @@ def pred_capture(net, dl):
 
 @torch.no_grad()
 def pred(net, img):
-  res = []
   net.eval()
-  r = net(F.resize(F.to_tensor(img), (30, 30)).unsqueeze(0).to(device))
-  res.append(r.squeeze().item())
-  return res
-
+  return net(img.unsqueeze(0).to(device)).squeeze().item()
 
 def save(net, path):
   return torch.save(net.state_dict(), path)
-
 
 def pretrained(path):
   net = SingleNet()
