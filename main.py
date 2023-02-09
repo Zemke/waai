@@ -32,9 +32,9 @@ class Runner:
 
   def dataset(self):
     if self.multi:
-      self.ds = dataset.MultiSet().augment()
-      print(f"mean:{self.ds.datasets[0].mean}, " + \
-            f"std:{self.ds.datasets[0].std}")
+      # TODO Pass single weapon per env var to exclude training for other weapons
+      self.ds = dataset.MultiSet()
+      print(f"mean:{self.ds.mean}, std:{self.ds.std}")
       print(f"training on classes: {dataset.CLASSES}")
     else:
       # TODO Supply single (sheep) as env variable otherwise default to MULTI=1

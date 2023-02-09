@@ -1,16 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 
 import torch
 from torch import nn
-from torchvision.transforms import functional as F
+import torch.nn.functional as F
 
-from tqdm import tqdm
+from tqdm import trange, tqdm
+import numpy as np
 
 
-STEP = 300
-EPOCHS = 10
+STEP = 10
+EPOCHS = 18
 
 device = torch.device(
   'cuda:0' if torch.cuda.is_available() else
@@ -20,29 +21,27 @@ device = torch.device(
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
-    self.features = nn.Sequential(
-        nn.Conv2d(3, 12, 2),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(12, 20, 2),
-        nn.ReLU(inplace=True),
-        nn.MaxPool2d(2, 2),
-    )
-    self.classifier = nn.Sequential(
-        nn.Dropout(p=.5),
-        nn.Linear(3920, 2600),
-        nn.ReLU(inplace=True),
-        nn.Linear(2600, 1000),
-        nn.ReLU(inplace=True),
-        nn.Linear(1000, num_classes),
-    )
+    self.conv1 = nn.Conv2d(3, 6, 5)
+    self.pool = nn.MaxPool2d(2, 2)
+    self.conv2 = nn.Conv2d(6, 16, 5)
+    self.fc1 = nn.Linear(16 * 4 * 4, 120)
+    self.fc2 = nn.Linear(120, 84)
+    self.fc3 = nn.Linear(84, num_classes)
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = self.features(x)
-    x = torch.flatten(x, 1)
-    #print(x.shape)
-    x = self.classifier(x)
+    x = self.pool(nn.functional.relu(self.conv1(x)))
+    x = self.pool(nn.functional.relu(self.conv2(x)))
+    x = torch.flatten(x, 1)  # flatten all dimensions except batch
+    x = F.relu(self.fc1(x))
+    x = F.relu(self.fc2(x))
+    x = self.fc3(x)
     return x
 
+
+  def device(self):
+    self.to(device)
+    print(f"moved net to {device}")
+    return self
 
 def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
   net.train(train)
@@ -50,7 +49,9 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
   losses, accs = [], []
   losses_val, accs_val = [], []
-  running_loss, running_acc = 0., 0.
+  running_loss, running_acc = \
+    torch.tensor(0., device=device), \
+    torch.tensor(0., device=device)
   progr = tqdm(dl,
                leave=train,
                colour='yellow' if train else 'green',
@@ -60,15 +61,15 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       optim.zero_grad()
 
     b, l = b.to(device), l.to(device)
+
     y = net(b)
-    loss = loss_fn(y, l)
+    loss = loss_fn(y.view(-1), l)
 
     if train:
       loss.backward()
       optim.step()
 
-    # accuracy
-    running_loss += loss.item()
+    running_loss += loss.detach()
     running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
 
     stepped = False
@@ -81,19 +82,19 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       stepped = True
 
     if stepped:
-      losses.append(running_loss/divisor)
-      accs.append(running_acc/divisor)
-      running_loss, running_acc = 0., 0.
+      losses.append((running_loss / divisor).cpu())
+      accs.append((running_acc / divisor).cpu())
+      running_loss, running_acc = \
+        torch.tensor(0., device=device), \
+        torch.tensor(0., device=device)
       if train and os.environ.get("TRAINONLY") != '1':
         with torch.no_grad():
           validres = _do(net, dl_train, dl_valid, loss_fn, None)
           losses_val.append(sum(validres[0])/len(validres[0]))
           accs_val.append(sum(validres[1])/len(validres[1]))
         progr.set_postfix(
-            loss=f"{losses[-1]:.4f}",
-            acc=f"{accs[-1]:.2f}",
-            val_loss=f"{losses_val[-1]:.4f}",
-            val_acc=f"{accs_val[-1]:.2f}")
+            loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
+            val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
       else:
         progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
 
@@ -104,10 +105,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 
 def train(net, dl_train, dl_valid=None):
-  net.to(device)
-  print(f"moved net to {device}")
-
-
+  #optim = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
   optim = torch.optim.Adam(net.parameters(), lr=1e-4)
   loss_fn = nn.CrossEntropyLoss()
 
@@ -127,25 +125,22 @@ def train(net, dl_train, dl_valid=None):
 
 @torch.no_grad()
 def pred_capture(net, dl):
-  if len(dl) > 1:
-    raise Exception("batch should encompass the whole dataset")
-  for i, b in enumerate(dl):
-    net.eval()
-    y = net(b)
-    return y.detach().numpy()
-
+  res = torch.tensor([], device=device)
+  with tqdm(total=len(dl), leave=False) as bar:
+    for i, b in enumerate(dl):
+      net.eval()
+      y = net(b.to(device))
+      res = torch.cat([res, y.squeeze().detach()])
+      bar.update()
+  return res.cpu().numpy()
 
 @torch.no_grad()
 def pred(net, img):
   net.eval()
-  # TODO centralize transforms and then it's just like pred_capture
-  y = net(F.resize(F.to_tensor(img), (30,30)).unsqueeze(0))
-  return y.squeeze().detach().numpy()
-
+  return net(img.unsqueeze(0).to(device)).squeeze().item()
 
 def save(net, path):
   return torch.save(net.state_dict(), path)
-
 
 def pretrained(path):
   state_dict = torch.load(path, map_location=torch.device('cpu'))

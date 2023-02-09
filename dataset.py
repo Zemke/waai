@@ -111,7 +111,6 @@ class CaptureMultiSet(Dataset):
       T.Normalize(mean=MEAN, std=STD)
     ])
 
-
   @torch.no_grad()
   def __len__(self):
     return len(self.tiles)
@@ -120,87 +119,63 @@ class CaptureMultiSet(Dataset):
   def __getitem__(self, idx):
     return self.transform(self.tiles[idx])
 
+
 class MultiSet(Dataset):
 
   def __init__(self,
+               augment=False,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
-    self.img_labels = pd.read_csv(annotations_file)
     self.img_dir = img_dir
+    self.df = pd.read_csv(annotations_file)
 
-    transform = T.Compose([T.Resize((30,30)), T.ToTensor(),])
-    stck = []
-    for idx in range(len(self.img_labels)):
-      img_path = self.im_path(idx)
-      image = Image.open(img_path).convert('RGB')
-      stck.append(transform(image))
-    self.std, self.mean = torch.std_mean(torch.stack(stck), (0,3,2))
-    transform.transforms.append(T.Normalize(mean=self.mean, std=self.std))
-    self.transform = transform
+    tt = T.Compose([
+      T.ToPILImage("RGB")
+      T.Resize((30,30)),
+      T.ToTensor(),
+    ])
 
-    self.augment()
+    stck = torch.stack([tt(self.imread(i)) for i in range(len(self.df))])
+    self.std, self.mean = torch.std_mean(stck, (0,3,2))
+    tt.transforms.append(T.Normalize(mean=self.mean, std=self.std))
+    self.transform = tt
 
-  def augment(self):
-    class AugmentDataset(Dataset):
-      def __init__(self, transforms):
-        self.imgs = []
-        self.transforms = transforms
-      def add(self, path, label, aug):
-        self.imgs.append((path, label, aug))
-      def __len__(self):
-        return len(self.imgs)
-      def __getitem__(self, idx):
-        path, label, aug = self.imgs[idx]
-        image = Image.open(path).convert('RGB')
-        transform = T.Compose([aug, *self.transforms])
-        #imshow augmentation
-        #if label == CLASSES.index('mine'):
-        #  import matplotlib.pyplot as plt
-        #  plt.imshow(transform(image).permute((1,2,0)))
-        #  plt.show()
-        return transform(image), label
-
-    aug_ds = AugmentDataset(self.transform.transforms)
-
-    for i in range(len(self.img_labels)):
-      label, path = self.img_labels.iloc[i, 1], self.im_path(i)
-      clazz = CLASSES[label]
-      if clazz == 'worm':
-        aug_ds.add(path, label, T.RandomRotation(10))
-        aug_ds.add(path, label, T.RandomAffine(0, translate=(.2,.2)))
-        aug_ds.add(path, label, T.RandomHorizontalFlip(p=.5))
-      elif clazz == 'mine':
-        for _ in range(2):
-          aug_ds.add(path, label, T.RandomRotation(40))
-          aug_ds.add(path, label, T.RandomRotation(20))
-        aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
-        for i in range(4, 9, 2):
-          aug_ds.add(path, label, T.Pad(i))
-      elif clazz == 'barrel':
-        for _ in range(4):
-          aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
-        for i in range(4, 11):
-          aug_ds.add(path, label, T.Pad(i))
-      elif clazz == 'dynamite':
-        aug_ds.add(path, label, T.RandomAffine(0, translate=(.1,.1)))
-      elif clazz == 'sheep':
-        for _ in range(10):
-          aug_ds.add(path, label, T.RandomHorizontalFlip(p=.5))
-          aug_ds.add(path, label, T.RandomAffine(0, translate=(.2,.2)))
-
-    return self + aug_ds
-
-  def im_path(self, idx):
-    return os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+  def imread(self, idx):
+    return read_image(
+      os.path.join(self.img_dir, self.df.iloc[idx]["file"]),
+      ImageReadMode.RGB)
 
   def __len__(self):
-    return len(self.img_labels)
+    return len(self.df)
 
   def __getitem__(self, idx):
-    img_path = self.im_path(idx)
-    image = Image.open(img_path).convert('RGB')
-    # image = read_image(img_path) pytorch/vision#4181
-    return self.transform(image), self.img_labels.iloc[idx, 1]
+    file, label = self.df.iloc[idx]
+
+    clazz = CLASSES[label]
+    if clazz == 'worm':
+      tt = [
+        T.RandomAffine(0, translate=(.3,.3)),
+        T.RandomHorizontalFlip(p=.5),
+      ]
+    elif clazz == 'mine':
+      tt = [
+        T.RandomRotation(40),
+        T.RandomAffine(0, translate=(.2,.2)),
+        T.RandomHorizontalFlip(p=.5),
+      ]
+    elif clazz == 'barrel':
+      tt = [T.RandomAffine(0, translate=(.4,.4))]
+    elif clazz == 'dynamite':
+      tt = [T.RandomAffine(0, translate=(.2,.2))]
+    elif clazz == 'sheep':
+      tt = [
+        T.RandomHorizontalFlip(p=.5),
+        T.RandomAffine(0, translate=(.2,.2)),
+      ]
+
+    return \
+      T.Compose([*self.transform, *tt])(self.imread(idx)), \
+      torch.tensor(label, dtype=torch.float32)
 
 
 def splitset(ds):
