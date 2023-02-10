@@ -130,7 +130,7 @@ class MultiSet(Dataset):
     self.df = pd.read_csv(annotations_file)
 
     tt = T.Compose([
-      T.ToPILImage("RGB")
+      T.ToPILImage("RGB"),
       T.Resize((30,30)),
       T.ToTensor(),
     ])
