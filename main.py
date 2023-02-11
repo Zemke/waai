@@ -148,7 +148,7 @@ if __name__ == "__main__":
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
-      dl_train, dl_test = dataset.load(ds_train), dataset.load(ds_test)
+      dl_train, dl_test = dataset.load(ds_train), dataset.load(ds_test, batch_size=len(ds_test))
       for dl in [dl_train, dl_test]:
         if dl is None:
           continue
