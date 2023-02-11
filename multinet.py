@@ -67,7 +67,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
     b, l = b.to(device), l.to(device)
 
     y = net(b)
-    loss = loss_fn(y.view(-1), l)
+    loss = loss_fn(y, l)
 
     if train:
       loss.backward()
