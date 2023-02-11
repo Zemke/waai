@@ -159,9 +159,9 @@ if __name__ == "__main__":
         print('split class seed:', c)
     else:
       dl_train, dl_test = dataset.load(data), None
-    trainres, validres = runner.train(dl_train, dl_test)
+    trainres, validres, pcres = runner.train(dl_train, dl_test)
     if os.environ.get("TRAINONLY") != '1':
-      visual.plt_res(trainres, validres, runner.epochs)
+      visual.plt_res(trainres, validres, pcres, data.classes, runner.epochs)
     if env_test:
       print("saving model with test flag is not possible as it was \
 trained with only part of the dataset")

@@ -44,25 +44,46 @@ def topprob(aa, rr, prob=.5):
   return res, sargs[:len(res)]
 
 
-def plt_res(trainres, validres, epochs):
+def plt_res(trainres, validres, pcres, classes, epochs):
   trainloss, trainacc = trainres
   validloss, validacc = validres
+  pcloss, pcacc = [np.concatenate(x).reshape((-1,len(classes))).transpose((1,0)) for x in pcres]
 
-  fig, (lossax, accax) = plt.subplots(2, 1, sharex=True)
+  plt.style.use("dark_background")
+  plt.rcParams["figure.figsize"] = (15,10)
+  plt.rcParams["savefig.dpi"] = 200
+  fig, ((lossax, accax), (losspcax, accpcax)) = plt.subplots(2, 2)
 
-  ls = np.linspace(1, epochs, len(trainloss))
+  lsa = np.linspace(1, epochs, len(trainloss))
+  lsb = np.linspace(1, epochs, pcloss.shape[1])
 
-  lossax.plot(ls, trainloss, label='loss train')
-  lossax.plot(ls, validloss, label='loss valid')
+  lossax.plot(lsa, trainloss, label='train')
+  lossax.plot(lsa, validloss, label='valid')
+  lossax.set_ylabel('mean loss')
+
+  accax.plot(lsa, trainacc, label='train')
+  accax.plot(lsa, validacc, label='valid')
+  accax.set_ylabel('mean accuracy')
+
+  for i in (-pcloss[:,-1]).argsort():
+    losspcax.plot(lsb, pcloss[i,:], label=f"{classes[i]} {pcloss[i,-1]:.4f}")
+  losspcax.set_ylabel('per-class mean loss')
+
+  for i in (-pcacc[:,-1]).argsort():
+    accpcax.plot(lsb, pcacc[i,:], label=f"{classes[i]} {round(pcacc[i,-1]*100)}%")
+  accpcax.set_ylabel('per-class mean accuracy')
+
+  losspcax.set_xlabel('epoch')
+  accpcax.set_xlabel('epoch')
+
   lossax.legend()
-
-  accax.plot(ls, trainacc, label='acc train')
-  accax.plot(ls, validacc, label='acc valid')
-
-  accax.set_xlabel('epoch')
-
   accax.legend()
+  losspcax.legend(fontsize=5.5, labelspacing=0)
+  accpcax.legend(fontsize=5.5, labelspacing=0)
 
+  plt.subplots_adjust(
+    left=.05, right=.99, top=.99, bottom=0.05,
+    wspace=.12, hspace=.1)
   plt.show()
 
 

@@ -48,14 +48,19 @@ class MultiNet(nn.Module):
     return self
 
 def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
+  classes = dl_train.dataset.dataset.classes
   net.train(train)
   dl = dl_train if train else dl_valid
 
   losses, accs = [], []
   losses_val, accs_val = [], []
+  losses_pc, accs_pc = [], []
   running_loss, running_acc = \
     torch.tensor(0., device=device), \
     torch.tensor(0., device=device)
+  running_acc_pc, running_loss_pc = \
+    torch.zeros(len(classes), device=device), \
+    torch.zeros(len(classes), device=device)
   progr = tqdm(dl,
                leave=train,
                colour='yellow' if train else 'green',
@@ -68,24 +73,23 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
     y = net(b)
     loss = loss_fn(y, l)
+    loss_mean = loss.mean()
 
     if train:
-      loss.backward()
+      loss_mean.backward()
       optim.step()
 
-    running_loss += loss.detach()
+    running_loss += loss_mean.detach()
+    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
 
-    if train or (weapon := os.getenv("WEAPON", None)) is None:
-      running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
-    else:
-      # per class accuracy
-      clazz = torch.tensor(
-        dl_train.dataset.dataset.classes.index(weapon=weapon),
-        device=device)
-      y_argmax = y.argmax(axis=1)
-      acc_clazz = (y_argmax == l)[(l == clazz).bitwise_or(y_argmax == clazz)]
-      if len(acc_clazz):
-        running_acc += torch.count_nonzero(acc_clazz) / len(acc_clazz)
+    if not train:
+      # TODO optim for GPU
+      for k in range(len(classes)):
+        clazz = torch.tensor(k, device=device)
+        y_argmax = y.argmax(axis=1)
+        for_clazz = (l == clazz).bitwise_or(y_argmax == clazz)
+        running_acc_pc[k] += (y_argmax == l)[for_clazz].float().mean()
+        running_loss_pc[k] += loss[for_clazz].mean()
 
     stepped = False
     step_mod = (i+1) % STEP
@@ -102,11 +106,19 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       running_loss, running_acc = \
         torch.tensor(0., device=device), \
         torch.tensor(0., device=device)
+      if not train:
+        losses_pc.append((running_loss_pc / divisor).cpu())
+        accs_pc.append((running_acc_pc / divisor).cpu())
+        running_acc_pc, running_loss_pc = \
+          torch.zeros(len(classes), device=device), \
+          torch.zeros(len(classes), device=device)
       if train and os.environ.get("TRAINONLY") != '1':
         with torch.no_grad():
           validres = _do(net, dl_train, dl_valid, loss_fn, None)
           losses_val.append(sum(validres[0])/len(validres[0]))
           accs_val.append(sum(validres[1])/len(validres[1]))
+          losses_pc.append(sum(validres[2])/len(validres[2]))
+          accs_pc.append(sum(validres[3])/len(validres[3]))
         progr.set_postfix(
             loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
             val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
@@ -114,28 +126,32 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
         progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
 
   if train:
-    return (losses, accs), (losses_val, accs_val)
+    return (losses, accs), (losses_val, accs_val), (losses_pc, accs_pc)
   else:
-    return losses, accs
+    return losses, accs, losses_pc, accs_pc
 
 
 def train(net, dl_train, dl_valid=None):
   optim = torch.optim.Adam(net.parameters(), lr=1e-3)
   loss_fn = nn.CrossEntropyLoss(
+    reduction='none',
     weight=dl_train.dataset.dataset.counts(relative=True).to(device))
 
   trainloss, trainacc = [], []
   validloss, validacc = [], []
+  pcloss, pcacc = [], []
   for epoch in range(EPOCHS):
     print(f"{epoch+1:02} of {EPOCHS:02}")
-    trainres, validres = \
+    trainres, validres, pcres = \
         _do(net, dl_train, dl_valid or dl_train, loss_fn, optim, True)
     trainloss.extend(trainres[0])
     trainacc.extend(trainres[1])
     validloss.extend(validres[0])
     validacc.extend(validres[1])
+    pcloss.extend(pcres[0])
+    pcacc.extend(pcres[1])
 
-  return (trainloss, trainacc), (validloss, validacc)
+  return (trainloss, trainacc), (validloss, validacc), (pcloss, pcacc)
 
 
 @torch.no_grad()
