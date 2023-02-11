@@ -21,20 +21,24 @@ device = torch.device(
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
-    self.conv1 = nn.Conv2d(3, 6, 5)
+    self.conv1 = nn.Conv2d(3, 10, 5)
     self.pool = nn.MaxPool2d(2, 2)
-    self.conv2 = nn.Conv2d(6, 16, 5)
-    self.fc1 = nn.Linear(16 * 4 * 4, 120)
-    self.fc2 = nn.Linear(120, 84)
-    self.fc3 = nn.Linear(84, num_classes)
+    self.conv2 = nn.Conv2d(10, 20, 3)
+    self.conv_bn = nn.BatchNorm2d(20)
+    self.fc1 = nn.Linear(20 * 5 * 5, 300)
+    self.fc_bn = nn.BatchNorm1d(300)
+    self.fc2 = nn.Linear(300, 200)
+    self.fc3 = nn.Linear(200, 100)
+    self.fc4 = nn.Linear(100, num_classes)
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = self.pool(nn.functional.relu(self.conv1(x)))
-    x = self.pool(nn.functional.relu(self.conv2(x)))
+    x = self.pool(F.relu(self.conv1(x)))
+    x = self.pool(F.relu(self.conv_bn(self.conv2(x))))
     x = torch.flatten(x, 1)  # flatten all dimensions except batch
-    x = F.relu(self.fc1(x))
+    x = F.relu(self.fc_bn(self.fc1(x)))
     x = F.relu(self.fc2(x))
-    x = self.fc3(x)
+    x = F.relu(self.fc3(x))
+    x = self.fc4(x)
     return x
 
 
