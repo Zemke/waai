@@ -32,10 +32,9 @@ class Runner:
 
   def dataset(self):
     if self.multi:
-      # TODO Pass single weapon per env var to exclude training for other weapons
-      self.ds = dataset.MultiSet()
+      self.ds = dataset.MultiSet(weapon=os.getenv("WEAPON", None))
       print(f"mean:{self.ds.mean}, std:{self.ds.std}")
-      print(f"training on classes: {dataset.CLASSES}")
+      print(f"training on classes: {self.ds.classes}")
     else:
       # TODO Supply single (sheep) as env variable otherwise default to MULTI=1
       self.ds = dataset.SingleSet('sheep').augment(bg=True)
@@ -45,7 +44,7 @@ class Runner:
 
   def net(self):
     if self.multi:
-      self.net = multinet.MultiNet(len(dataset.CLASSES))
+      self.net = multinet.MultiNet(len(self.ds.classes)).device()
     else:
       self.net = singlenet.SingleNet().device()
     return self.net

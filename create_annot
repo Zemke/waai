@@ -1,17 +1,15 @@
 #!/bin/bash
 
 cd dataset
-echo "file,class,label" > annot.csv
+echo "file,class" > annot.csv
 
-class=0
 tot=0
 for f in $(find . -maxdepth 1 -type d | grep .. | cut -c3- | sort); do
-  pos=$(ls -1 -- $f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "${f}/%,${f},${class}")
+  pos=$(ls -1 -- $f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "${f}/%,${f}")
   echo "$pos" >> annot.csv
   c=$(echo "$pos" | wc -l)
   echo $c $f
   tot=$((tot+c))
-  class=$((class+1))
 done
 
 echo "${tot} in total"

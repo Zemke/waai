@@ -14,10 +14,8 @@ import pandas as pd
 
 import visual
 
-
 CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
-MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
 C, W, H = 3, 30, 30
 TRANSFORMS = [T.ToTensor(), T.Resize((H, W))]
 
@@ -120,14 +118,29 @@ class CaptureMultiSet(Dataset):
     return self.transform(self.tiles[idx])
 
 
+WEAPONS = ["dynamite", "sheep"]
+ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
+MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
+ALL = [*WEAPONS, *ALWAYS, *MAPS]
+
 class MultiSet(Dataset):
 
   def __init__(self,
+               weapon=None,
                augment=False,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
     self.img_dir = img_dir
-    self.df = pd.read_csv(annotations_file)
+
+    df = pd.read_csv(annotations_file)
+    if len(unkn := df[~df["class"].isin(ALL)]["class"].unique()):
+      raise Exception(f"unknown classes: {unkn}")
+    if weapon is not None:
+      assert weapon in WEAPONS or weapon == 'mine'
+      # filter all other weapons
+      df = df[~df["class"].isin([w for w in WEAPONS if w != weapon])]
+    self.df = df
+    self.classes = sorted(df["class"].unique())
 
     tt = T.Compose([
       T.ToPILImage("RGB"),
@@ -140,6 +153,13 @@ class MultiSet(Dataset):
     tt.transforms.append(T.Normalize(mean=self.mean, std=self.std))
     self.transform = tt
 
+  def counts(self, relative=False):
+    vc = dict(self.df["class"].value_counts())
+    arr = torch.tensor([vc[c] for c in self.classes])
+    if relative:
+      return arr / arr.sum()
+    return arr
+
   def imread(self, idx):
     return read_image(
       os.path.join(self.img_dir, self.df.iloc[idx]["file"]),
@@ -149,33 +169,69 @@ class MultiSet(Dataset):
     return len(self.df)
 
   def __getitem__(self, idx):
-    file, label = self.df.iloc[idx]
+    clazz = self.df.iloc[idx]["class"]
+    transform = T.Compose([*self.transform.transforms, *self._augments(clazz)])
+    # imshow augmentation
+    #if clazz == 'mine':
+    #  import matplotlib.pyplot as plt
+    #  import numpy as np
+    #  from time import sleep
+    #  x = transform(self.imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
+    #  plt.imshow(x.permute((1,2,0)))
+    #  plt.show()
+    #  sleep(1)
+    return \
+      transform(self.imread(idx)), \
+      torch.tensor(self.classes.index(clazz))
 
-    clazz = CLASSES[label]
+  def _augments(self, clazz):
     if clazz == 'worm':
       tt = [
-        T.RandomAffine(0, translate=(.3,.3)),
+        T.RandomAffine(degrees=0, translate=(.3,.3)),
         T.RandomHorizontalFlip(p=.5),
       ]
     elif clazz == 'mine':
       tt = [
         T.RandomRotation(40),
-        T.RandomAffine(0, translate=(.2,.2)),
+        T.RandomAffine(degrees=0, translate=(.2,.2)),
         T.RandomHorizontalFlip(p=.5),
       ]
     elif clazz == 'barrel':
-      tt = [T.RandomAffine(0, translate=(.4,.4))]
+      tt = [T.RandomAffine(degrees=0, translate=(.4,.4))]
     elif clazz == 'dynamite':
-      tt = [T.RandomAffine(0, translate=(.2,.2))]
+      tt = [T.RandomAffine(degrees=0, translate=(.2,.2))]
     elif clazz == 'sheep':
       tt = [
         T.RandomHorizontalFlip(p=.5),
-        T.RandomAffine(0, translate=(.2,.2)),
+        T.RandomAffine(degrees=0, translate=(.2,.2)),
       ]
-
-    return \
-      T.Compose([*self.transform, *tt])(self.imread(idx)), \
-      torch.tensor(label, dtype=torch.float32)
+    elif clazz in MAPS:
+      tt = [T.RandomHorizontalFlip(p=.5)]
+    elif clazz == "debris":
+      tt = [
+        T.RandomPerspective(distortion_scale=.2, p=.5),
+        T.RandomAffine(degrees=180, translate=(.2,.2)),
+      ]
+    elif clazz == "water" or clazz == "cloud":
+      tt = [
+        T.RandomHorizontalFlip(p=.5),
+        T.RandomAffine(degrees=0, translate=(.2,.2)),
+      ]
+    elif clazz == "rope":
+      tt = [
+        T.RandomAffine(degrees=180, translate=(.3,.3)),
+      ]
+    elif clazz == "crate":
+      tt = [
+        T.RandomAffine(degrees=30, translate=(.5,.5)),
+      ]
+    elif clazz in ["text", "crate", "puffs", "phone", "healthbar", "girder", "flag"]:
+      tt = [
+        T.RandomAffine(degrees=0, translate=(.1,.1)),
+      ]
+    else:
+      tt = []
+    return tt
 
 
 def splitset(ds):
