@@ -10,8 +10,8 @@ from tqdm import trange, tqdm
 import numpy as np
 
 
-STEP = 10
-EPOCHS = 18
+STEP = 5
+EPOCHS = 20
 
 device = torch.device(
   'cuda:0' if torch.cuda.is_available() else
@@ -65,6 +65,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
                leave=train,
                colour='yellow' if train else 'green',
                postfix=dict(loss="na", acc="na"))
+  step = len(dl) // STEP + 1
   for i, (b, l) in enumerate(progr):
     if train:
       optim.zero_grad()
@@ -92,9 +93,9 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
         running_loss_pc[k] += loss[for_clazz].mean()
 
     stepped = False
-    step_mod = (i+1) % STEP
+    step_mod = (i+1) % step
     if step_mod == 0:
-      divisor = STEP
+      divisor = step
       stepped = True
     elif len(dl) == (i+1):
       divisor = step_mod
