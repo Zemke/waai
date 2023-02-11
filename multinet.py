@@ -74,7 +74,18 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
       optim.step()
 
     running_loss += loss.detach()
-    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
+
+    if train or (weapon := os.getenv("WEAPON", None)) is None:
+      running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
+    else:
+      # per class accuracy
+      clazz = torch.tensor(
+        dl_train.dataset.dataset.classes.index(weapon=weapon),
+        device=device)
+      y_argmax = y.argmax(axis=1)
+      acc_clazz = (y_argmax == l)[(l == clazz).bitwise_or(y_argmax == clazz)]
+      if len(acc_clazz):
+        running_acc += torch.count_nonzero(acc_clazz) / len(acc_clazz)
 
     stepped = False
     step_mod = (i+1) % STEP
