@@ -3,6 +3,7 @@
 import os
 import sys
 import pickle
+from time import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,7 +48,7 @@ def topprob(aa, rr, prob=.5):
 
 
 def plt_res(trainres, validres, pcres, classes, epochs):
-  with open('metrics.pkl', 'wb') as f:
+  with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
     pickle.dump(
       dict(
         trainres=trainres,
