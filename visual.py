@@ -78,12 +78,22 @@ def plt_res(trainres, validres, pcres, classes, epochs):
   accax.plot(lsa, validacc, label='valid')
   accax.set_ylabel('mean accuracy')
 
+  pclosslines = []
+  colors = {}
   for i in (-pcloss[:,-1]).argsort():
-    losspcax.plot(lsb, pcloss[i,:], label=f"{classes[i]} {pcloss[i,-1]:.4f}")
+    x, = losspcax.plot(lsb, pcloss[i,:], label=f"{classes[i]} {pcloss[i,-1]:.4f}")
+    colors[classes[i]] = x.get_color()
+    pclosslines.append(x)
   losspcax.set_ylabel('per-class mean loss')
 
+  pcacclines = []
   for i in (-pcacc[:,-1]).argsort():
-    accpcax.plot(lsb, pcacc[i,:], label=f"{classes[i]} {round(pcacc[i,-1]*100)}%")
+    x, = accpcax.plot(
+      lsb,
+      pcacc[i,:],
+      color=colors[classes[i]],
+      label=f"{classes[i]} {round(pcacc[i,-1]*100)}%")
+    pcacclines.append(x)
   accpcax.set_ylabel('per-class mean accuracy')
 
   losspcax.set_xlabel('epoch')
@@ -91,8 +101,48 @@ def plt_res(trainres, validres, pcres, classes, epochs):
 
   lossax.legend()
   accax.legend()
-  losspcax.legend(fontsize=5.5, labelspacing=0)
-  accpcax.legend(fontsize=5.5, labelspacing=0)
+  losspcleg = losspcax.legend(fontsize=5.5, labelspacing=0)
+  accpcleg = accpcax.legend(fontsize=5.5, labelspacing=0)
+
+  lined = [{}, {}]
+  for legline, origline in zip(losspcleg.get_lines(), pclosslines):
+    legline.set_picker(True)
+    legline.set_linewidth(4.0)
+    lined[0][legline] = origline
+  for legline, origline in zip(accpcleg.get_lines(), pcacclines):
+    legline.set_picker(True)
+    legline.set_linewidth(4.0)
+    lined[1][legline] = origline
+
+  def on_pick(event):
+    li = lined[::-1] if event.artist.axes == accpcax else lined
+    if all(v.get_visible() for v in li[0].values()):
+      # all are visible
+      for k,v in li[0].items():
+        if k != event.artist:
+          v.set_visible(False)
+          k.set_alpha(.2)
+    elif len(vis := [(k,v) for k,v in li[0].items() if v.get_visible()]) == 1 \
+      and vis[0][0] == event.artist:
+      # one is visible and it's clicked
+      for k,v in li[0].items():
+        v.set_visible(True)
+        k.set_alpha(1.)
+    else:
+      legline = event.artist
+      origline = li[0][legline]
+      visible = not origline.get_visible()
+      origline.set_visible(visible)
+      legline.set_alpha(1. if visible else .2)
+    # cascade to accpc
+    for v in li[0].values():
+      name, visible = v.get_label().split(' ')[0], v.get_visible()
+      for k1, v1 in li[1].items():
+        if v1.get_label().split(' ')[0] == name:
+          v1.set_visible(visible)
+          k1.set_alpha(1. if visible else .2)
+    fig.canvas.draw()
+  fig.canvas.mpl_connect('pick_event', on_pick)
 
   plt.subplots_adjust(
     left=.05, right=.99, top=.99, bottom=0.05,
