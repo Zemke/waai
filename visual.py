@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os
+import sys
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,6 +47,16 @@ def topprob(aa, rr, prob=.5):
 
 
 def plt_res(trainres, validres, pcres, classes, epochs):
+  with open('metrics.pkl', 'wb') as f:
+    pickle.dump(
+      dict(
+        trainres=trainres,
+        validres=validres,
+        pcres=pcres,
+        classes=classes,
+        epochs=epochs),
+      f)
+
   trainloss, trainacc = trainres
   validloss, validacc = validres
   pcloss, pcacc = [np.concatenate(x).reshape((-1,len(classes))).transpose((1,0)) for x in pcres]
@@ -89,4 +101,14 @@ def plt_res(trainres, validres, pcres, classes, epochs):
 
 def write_img(img, path, name):
   return Image.fromarray(img).save(os.path.join(path, name))
+
+
+def deserialize(p='metrics.pkl'):
+  with open(p, 'rb') as f:
+    X = pickle.load(f)
+  plt_res(**X)
+
+
+if __name__ == "__main__":
+  deserialize(*sys.argv[1:2])
 
