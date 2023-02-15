@@ -11,7 +11,7 @@ import numpy as np
 
 
 STEP = 5
-EPOCHS = 20
+EPOCHS = int(os.getenv("EPOCHS", 20))
 
 device = torch.device(
   'cuda:0' if torch.cuda.is_available() else
