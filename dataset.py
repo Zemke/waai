@@ -14,94 +14,20 @@ import pandas as pd
 
 import visual
 
-CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite', 'sheep']
+
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 C, W, H = 3, 30, 30
-TRANSFORMS = [T.ToTensor(), T.Resize((H, W))]
 
-
-class SingleSet(Dataset):
-  @torch.no_grad()
-  def __init__(self,
-               single,
-               df=None,
-               annotations_file='./dataset/annot.csv',
-               transform=None,
-               img_dir='./dataset'):
-    self.single = single
-    self.img_dir = img_dir
-
-    if df is None:
-      clazz = CLASSES.index(single)
-      df = pd.read_csv(annotations_file)
-      df = df[df["label"] == clazz]
-      df.loc[df["label"] == clazz, "label"] = int(bool(clazz))
-      df.reset_index(inplace=True, drop=True)
-    self.df = df
-
-    self.transform = T.Compose([
-      T.ToPILImage("RGB"),
-      *TRANSFORMS,
-      *([] if transform is None else transform)
-      # TODO Normalize
-    ])
-
-  def augment(self, bg=False) -> ConcatDataset:
-    # shared dataframe (df)
-    augs = [
-      self,
-      SingleSet(self.single, df=self.df, transform=[T.RandomHorizontalFlip(p=1)]),
-      SingleSet(self.single, df=self.df, transform=[
-          T.RandomAffine(0, translate=(.2,.2)),
-          T.RandomHorizontalFlip(p=.5),
-        ]),
-    ]
-    if bg:
-      augs.append(SingleSet('bg'))
-    return ConcatDataset(augs)
-
-  def count(self):
-    return {self.single: cnt.item() for clazz,cnt in dict(self.df["label"].value_counts()).items()}
-
-  @staticmethod
-  def count_cum(dss: ConcatDataset):
-    ab = [ds.count() for ds in dss.datasets]
-    return {k: sum(x[k] if k in x else 0 for x in ab) for k in {x for y in ab for x in y}}
-
-  def __len__(self):
-    return len(self.df)
-
-  def __getitem__(self, idx):
-    file, label = self.df.iloc[idx]
-    return \
-      self.transform(read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)), \
-      torch.tensor(label, dtype=torch.float32)
-
-
-class CaptureSet(Dataset):
-  @torch.no_grad()
-  def __init__(self, path):
-    img = visual.load(path)[150:-375, 150:-150,:]
-    self.tiles = visual.tile(img, kernel=33)
-    self.transform = T.Compose([
-      T.ToTensor(),
-      T.Resize((30,30)),
-    ])
-
-  @torch.no_grad()
-  def __len__(self):
-    return len(self.tiles)
-
-  @torch.no_grad()
-  def __getitem__(self, idx):
-    return self.transform(self.tiles[idx])
+WEAPONS = ["dynamite", "sheep"]
+ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
+MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
+ALL = [*WEAPONS, *ALWAYS, *MAPS]
 
 
 class CaptureMultiSet(Dataset):
   @torch.no_grad()
   def __init__(self, path):
     img = visual.load(path)
-    # TODO kernel is incompatible with singlenet
     self.tiles = visual.tile(img, kernel=30, stride=10)
     self.transform = T.Compose([
       T.ToTensor(),
@@ -117,11 +43,6 @@ class CaptureMultiSet(Dataset):
   def __getitem__(self, idx):
     return self.transform(self.tiles[idx])
 
-
-WEAPONS = ["dynamite", "sheep"]
-ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
-MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
-ALL = [*WEAPONS, *ALWAYS, *MAPS]
 
 class MultiSet(Dataset):
 
@@ -242,7 +163,4 @@ def splitset(ds):
 
 def load(dataset, batch_size=8, shuffle=True):
   return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
-
-def transform(x):
-  return T.Compose(TRANSFORMS)(x)
 

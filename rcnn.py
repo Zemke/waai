@@ -21,13 +21,12 @@ import multinet
 import cropset
 import dataset
 
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"device is {device}")
 
 
 def create_net():
-  net = multinet.MultiNet(len(dataset.CLASSES))
+  net = multinet.MultiNet(len(dataset.ALL))
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features

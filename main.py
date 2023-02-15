@@ -8,7 +8,6 @@ import math
 
 from tqdm import trange
 
-import singlenet
 import multinet
 import dataset
 import visual
@@ -16,90 +15,63 @@ import visual
 import numpy as np
 
 
+# TODO return "sigmoided" from mutlinet
 def sigmoid(x):
   return 1/(1+math.e**(-x))
 
 
 class Runner:
-  def __init__(self, multi):
-    self.multi = multi
-    self.epochs = multinet.EPOCHS if self.multi else singlenet.EPOCHS
+  def __init__(self):
+    self.epochs = multinet.EPOCHS
   
   def pretrained(self, path):
-    self.net = multinet.pretrained(path) if self.multi else singlenet.pretrained(path).device()
+    self.net = multinet.pretrained(path)
     print(f'using existing model {path}')
     return self.net
 
   def dataset(self):
-    if self.multi:
-      self.ds = dataset.MultiSet(weapon=os.getenv("WEAPON", None))
-      print(f"mean:{self.ds.mean}, std:{self.ds.std}")
-      print(f"training on classes: {self.ds.classes}")
-    else:
-      # TODO Supply single (sheep) as env variable otherwise default to MULTI=1
-      self.ds = dataset.SingleSet('sheep').augment(bg=True)
-      print("binary classification")
-      print(dataset.SingleSet.count_cum(self.ds))
+    self.ds = dataset.MultiSet(weapon=os.getenv("WEAPON", None))
+    print(f"mean:{self.ds.mean}, std:{self.ds.std}")
+    print(f"training on classes: {self.ds.classes}")
     return self.ds
 
   def net(self):
-    if self.multi:
-      self.net = multinet.MultiNet(len(self.ds.classes)).device()
-    else:
-      self.net = singlenet.SingleNet().device()
+    self.net = multinet.MultiNet(len(self.ds.classes)).device()
     return self.net
 
   def train(self, dl_train, dl_test):
     args = self.net, dl_train, dl_test
-    return multinet.train(*args) if self.multi else singlenet.train(*args)
+    return multinet.train(*args)
 
   def save(self, loc):
     args = self.net, loc
-    return multinet.save(*args) if self.multi else singlenet.save(*args)
+    return multinet.save(*args)
     
   def pred(self):
-    x = dataset.transform(fromstdin)
-    if self.multi:
-      y = multinet.pred(net, x)
-      argmax = np.argmax(y)
-      print(y, argmax)
-      return dataset.CLASSES[argmax], sigmoid(y[argmax])
-    else:
-      return sigmoid(singlenet.pred(net, x))
+    y = multinet.pred(net, dataset.transform(fromstdin))
+    argmax = np.argmax(y)
+    print(y, argmax)
+    return dataset.CLASSES[argmax], sigmoid(y[argmax])
 
 
   def pred_capture(self, paths, target_dir, topn):
     for i in trange(len(paths)):
-      if self.multi:
-        dl = dataset.load(
-            dataset.CaptureMultiSet(
-                paths[i]), batch_size=800*640, shuffle=False)
-        preds = multinet.pred_capture(self.net, dl)
-        argsorted = preds.argsort(axis=0)
-        for ci in range(1, len(dataset.CLASSES)):
-          for toparg in argsorted[:,ci][::-1][:topn]:
-            score = round(sigmoid(preds[toparg][ci]) * 10000)
-            ts = round(time() * 1000000)
-            visual.write_img(
-                dl.dataset.tiles[toparg], target_dir,
-                f"{dataset.CLASSES[ci]}_{score}_{ts}.png")
-      else:
-        dl = dataset.load(
-            dataset.CaptureSet(
-                paths[i]), batch_size=64*2, shuffle=False)
-        yy = singlenet.pred_capture(self.net, dl)
-        if isinstance(topn, int):
-          top, topargs = visual.topk(dl.dataset.tiles, yy, topn)
-        else:
-          top, topargs = visual.topprob(dl.dataset.tiles, sigmoid(yy), topn)
-        for i in range(len(top)):
+      dl = dataset.load(
+          dataset.CaptureMultiSet(
+              paths[i]), batch_size=800*640, shuffle=False)
+      preds = multinet.pred_capture(self.net, dl)
+      argsorted = preds.argsort(axis=0)
+      for ci in range(1, len(dataset.CLASSES)):
+        for toparg in argsorted[:,ci][::-1][:topn]:
+          score = round(sigmoid(preds[toparg][ci]) * 10000)
           ts = round(time() * 1000000)
-          score = round(sigmoid(yy[topargs[i]]) * 10000)
-          visual.write_img(top[i], target_dir, f"{score}_{ts}.png")
+          visual.write_img(
+              dl.dataset.tiles[toparg], target_dir,
+              f"{dataset.CLASSES[ci]}_{score}_{ts}.png")
 
 
 if __name__ == "__main__":
-  runner = Runner(os.environ.get('MULTI') == '1')
+  runner = Runner()
 
   fromstdin = None
   if select.select([sys.stdin, ], [], [], 0.0)[0]:
@@ -148,15 +120,8 @@ if __name__ == "__main__":
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
-      dl_train, dl_test = dataset.load(ds_train), dataset.load(ds_test, batch_size=len(ds_test))
-      for dl in [dl_train, dl_test]:
-        if dl is None:
-          continue
-        c = np.zeros(len(dataset.CLASSES), dtype=int)
-        for _, l in dl:
-          for ci in range(len(dataset.CLASSES)):
-            c[ci] += len(l[l == ci])
-        print('split class seed:', c)
+      dl_train, dl_test = dataset.load(ds_train, batch_size=16), dataset.load(ds_test, batch_size=len(ds_test))
+      # TODO log value counts from dataset
     else:
       dl_train, dl_test = dataset.load(data), None
     trainres, validres, pcres = runner.train(dl_train, dl_test)
@@ -166,7 +131,7 @@ if __name__ == "__main__":
       print("saving model with test flag is not possible as it was \
 trained with only part of the dataset")
     else:
-      loc = "./model_multinet.pt" if runner.multi else "./model_singlenet.pt"
+      loc = "./model_multinet.pt"
       print(f'overwrite model to {loc}? [Y/n]', end=' ')
       if input().strip().lower() != 'n':
         runner.save(loc)
