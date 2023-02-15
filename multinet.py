@@ -16,7 +16,7 @@ EPOCHS = int(os.getenv("EPOCHS", 20))
 device = torch.device(
   'cuda:0' if torch.cuda.is_available() else
   'mps' if torch.backends.mps.is_available() else
-  'cpu')
+  'cpu') if os.getenv("GPU", False) == "1" else "cpu"
 
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
