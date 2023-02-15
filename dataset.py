@@ -31,7 +31,7 @@ class CaptureMultiSet(Dataset):
     self.tiles = visual.tile(img, kernel=30, stride=10)
     self.transform = T.Compose([
       T.ToTensor(),
-      T.Resize((30,30)),
+      T.Resize((H,W)),
       T.Normalize(mean=MEAN, std=STD)
     ])
 
@@ -65,7 +65,7 @@ class MultiSet(Dataset):
 
     tt = T.Compose([
       T.ToPILImage("RGB"),
-      T.Resize((30,30)),
+      T.Resize((H,W)),
       T.ToTensor(),
     ])
 
