@@ -1,20 +1,16 @@
 #!/bin/bash
 
 cd dataset
-echo "file,label" > annot.csv
+echo "file,class" > annot.csv
 
 tot=0
-echo 'class_weapon positive negative'
-for f in $(find * -type d -maxdepth 0); do
-  class=$(echo $f | cut -d '_' -f 1)
-  pos=$(find ${f} -type f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "%,${class}")
+for f in $(find . -maxdepth 1 -type d | grep .. | cut -c3- | sort); do
+  pos=$(ls -1 -- $f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "${f}/%,${f}")
   echo "$pos" >> annot.csv
   c=$(echo "$pos" | wc -l)
-  echo $f $c
-  if [ "$class" -ne "0" ]; then
-    tot=$((tot+c))
-  fi
+  echo $c $f
+  tot=$((tot+c))
 done
 
-echo "total non-bg: ${tot}"
+echo "${tot} in total"
 
