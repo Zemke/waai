@@ -5,7 +5,8 @@ from math import ceil, floor
 
 import torch
 from torch.utils.data import \
-    Dataset, DataLoader, ConcatDataset, random_split, Subset
+    Dataset, DataLoader, ConcatDataset, \
+    random_split, Subset, WeightedRandomSampler
 from torchvision.io import read_image, ImageReadMode
 import torchvision.transforms as T
 
@@ -161,8 +162,15 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, batch_size=None, shuffle=True):
+def load(dataset, batch_size=None, oversample=False, shuffle=True):
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
   print('batch size is', bs)
-  return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
+  if oversample:
+    cnt = 1 / dataset.counts()
+    weights = [cnt[dataset.classes.index(v)] for v in dataset.df["class"].values]
+    sampler = WeightedRandomSampler(weights, len(dataset))
+    return DataLoader(dataset, batch_size=bs, sampler=sampler)
+  else:
+    return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
+
 
