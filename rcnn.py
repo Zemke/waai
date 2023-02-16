@@ -26,7 +26,7 @@ print(f"device is {device}")
 
 
 def create_net():
-  net = multinet.MultiNet(len(dataset.ALL))
+  net = multinet.MultiNet(len(dataset.CLASSES))
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features

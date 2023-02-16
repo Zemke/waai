@@ -22,7 +22,7 @@ C, W, H = 3, 30, 30
 WEAPONS = ["dynamite", "sheep"]
 ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
 MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
-ALL = [*WEAPONS, *ALWAYS, *MAPS]
+CLASSES = [*WEAPONS, *ALWAYS, *MAPS]
 
 
 class CaptureMultiSet(Dataset):
@@ -55,7 +55,7 @@ class MultiSet(Dataset):
     self.img_dir = img_dir
 
     df = pd.read_csv(annotations_file)
-    if len(unkn := df[~df["class"].isin(ALL)]["class"].unique()):
+    if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
       raise Exception(f"unknown classes: {unkn}")
     if weapon is not None:
       assert weapon in WEAPONS or weapon == 'mine'
