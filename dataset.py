@@ -161,6 +161,8 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, batch_size=8, shuffle=True):
-  return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+def load(dataset, batch_size=None, shuffle=True):
+  bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
+  print('batch size is', bs)
+  return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
 
