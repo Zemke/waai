@@ -61,7 +61,7 @@ class Runner:
               paths[i]), batch_size=800*640, shuffle=False)
       preds = multinet.pred_capture(self.net, dl)
       argsorted = preds.argsort(axis=0)
-      for ci in range(1, len(dataset.CLASSES)):
+      for ci in range(len(dataset.CLASSES)):
         for toparg in argsorted[:,ci][::-1][:topn]:
           score = round(sigmoid(preds[toparg][ci]) * 10000)
           ts = round(time() * 1000000)
