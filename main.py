@@ -120,10 +120,12 @@ if __name__ == "__main__":
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
-      dl_train, dl_test = dataset.load(ds_train, batch_size=16), dataset.load(ds_test, batch_size=len(ds_test))
+      dl_train, dl_test = \
+        dataset.load(ds_train, batch_size=16, oversample=True), \
+        dataset.load(ds_test, batch_size=len(ds_test))
       # TODO log value counts from dataset
     else:
-      dl_train, dl_test = dataset.load(data), None
+      dl_train, dl_test = dataset.load(data, oversample=True), None
     trainres, validres, pcres = runner.train(dl_train, dl_test)
     if os.environ.get("TRAINONLY") != '1':
       visual.plt_res(trainres, validres, pcres, data.classes, runner.epochs)

@@ -134,9 +134,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
 def train(net, dl_train, dl_valid=None):
   optim = torch.optim.Adam(net.parameters(), lr=1e-3)
-  loss_fn = nn.CrossEntropyLoss(
-    reduction='none',
-    weight=dl_train.dataset.dataset.counts(relative=True).to(device))
+  loss_fn = nn.CrossEntropyLoss(reduction='none')
 
   trainloss, trainacc = [], []
   validloss, validacc = [], []
