@@ -125,6 +125,7 @@ if __name__ == "__main__":
       dl_train, dl_test = \
         dataset.load(ds_train, oversample=True), \
         dataset.load(ds_test, batch_size=len(ds_test))
+      # TODO balance validation dataset
       # TODO log value counts from dataset
       print('valid seed:')
       print(dataset.counts(data.classes, ds_test))
