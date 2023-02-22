@@ -14,7 +14,7 @@ STEP = 5
 EPOCHS = int(os.getenv("EPOCHS", 20))
 
 device = torch.device(
-  'cuda:0' if torch.cuda.is_available() else
+  'cuda' if torch.cuda.is_available() else
   'mps' if torch.backends.mps.is_available() else
   'cpu') if os.getenv("GPU", False) == "1" else "cpu"
 
