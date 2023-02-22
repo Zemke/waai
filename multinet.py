@@ -21,6 +21,7 @@ device = torch.device(
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
+    self.num_classes = num_classes
     self.conv1 = nn.Conv2d(3, 10, 5)
     self.pool = nn.MaxPool2d(2, 2)
     self.conv2 = nn.Conv2d(10, 20, 3)
@@ -48,7 +49,6 @@ class MultiNet(nn.Module):
     return self
 
 def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
-  classes = dl_train.dataset.dataset.classes
   net.train(train)
   dl = dl_train if train else dl_valid
 
@@ -59,8 +59,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
     torch.tensor(0., device=device), \
     torch.tensor(0., device=device)
   running_acc_pc, running_loss_pc = \
-    torch.zeros(len(classes), device=device), \
-    torch.zeros(len(classes), device=device)
+    torch.zeros(net.num_classes, device=device), \
+    torch.zeros(net.num_classes, device=device)
   progr = tqdm(dl,
                leave=train,
                colour='yellow' if train else 'green',
@@ -85,7 +85,7 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
 
     if not train:
       # TODO optim for GPU
-      for k in range(len(classes)):
+      for k in range(net.num_classes):
         clazz = torch.tensor(k, device=device)
         y_argmax = y.argmax(axis=1)
         for_clazz = (l == clazz).bitwise_or(y_argmax == clazz)
@@ -111,8 +111,8 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
         losses_pc.append((running_loss_pc / divisor).cpu())
         accs_pc.append((running_acc_pc / divisor).cpu())
         running_acc_pc, running_loss_pc = \
-          torch.zeros(len(classes), device=device), \
-          torch.zeros(len(classes), device=device)
+          torch.zeros(net.num_classes, device=device), \
+          torch.zeros(net.num_classes, device=device)
       if train and os.environ.get("TRAINONLY") != '1':
         with torch.no_grad():
           validres = _do(net, dl_train, dl_valid, loss_fn, None)
