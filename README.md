@@ -6,25 +6,6 @@
 
 [Blog](https://waai.zemke.io/object-recognition) • [Demo](https://www.youtube.com/watch?v=3sq1OArzWF8)
 
-## TODO
-
-- All images in the dataset originate from SingleNet.
-  - Therefore `bg` from SingleNet runs should remain associated to the class.
-    I.e. when SingleNet classifies sheep,
-    `bg` from that inferencing should remain associated to the sheep.
-    There could be a directory structure like `dataset/sheep/{0,1}/*.png`.
-- Git LFS for dataset and models?
-  - `alllogs`, `allreplays`
-  - Keep all captures from `/getvideo` runs.
-    They can be used to train the RPN later.
-    Keep association to weapon.
-  - Backups, too.
-- Environment variables:
-  - epochs
-  - batch size
-  - CPU/GPU
-
-
 ## Weapons
 
 There are **26** weapons that reduce ammo
@@ -37,7 +18,7 @@ and of which there is enough data from replays.
 
 ### Attached
 
-Weapons that are visually attached to the worms using it.
+Weapons that are visually attached to the worm using it.
 
 ![Weapon](weapons/138.bmp)
 ![Weapon](weapons/140.bmp)
@@ -63,7 +44,7 @@ Weapons that are visually attached to the worms using it.
 
 ### Released
 
-Released and than having their own mind (animals).
+Released and then having their own mind (animals).
 
 ![Weapon](weapons/159.bmp)
 ![Weapon](weapons/177.bmp)
@@ -87,5 +68,4 @@ Weapons places with a click pointer cursor.
 
 ![Weapon](weapons/300.bmp)
 ![Weapon](weapons/353.bmp)
-
 
