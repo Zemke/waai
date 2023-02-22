@@ -163,14 +163,20 @@ def splitset(ds):
 
 
 def load(dataset, batch_size=None, oversample=False, shuffle=True):
+  if isinstance(dataset, MultiSet):
+    ds = dataset
+  elif isinstance(dataset, Subset):
+    ds = dataset.dataset
+  else:
+    raise Exception(f"Unhandled dataset type {type(dataset)}")
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
   print('batch size is', bs)
   if oversample:
-    cnt = 1 / dataset.counts()
-    weights = [cnt[dataset.classes.index(v)] for v in dataset.df["class"].values]
-    sampler = WeightedRandomSampler(weights, len(dataset))
-    return DataLoader(dataset, batch_size=bs, sampler=sampler)
+    cnt = 1 / ds.counts()
+    weights = [cnt[ds.classes.index(v)] for v in ds.df["class"].values]
+    sampler = WeightedRandomSampler(weights, len(ds))
+    return DataLoader(ds, batch_size=bs, sampler=sampler)
   else:
-    return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
+    return DataLoader(ds, batch_size=bs, shuffle=shuffle)
 
 
