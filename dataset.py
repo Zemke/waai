@@ -2,6 +2,7 @@
 
 import os
 from math import ceil, floor
+from collections import Counter
 
 import torch
 from torch.utils.data import \
@@ -179,4 +180,6 @@ def load(dataset, batch_size=None, oversample=False, shuffle=True):
   else:
     return DataLoader(ds, batch_size=bs, shuffle=shuffle)
 
+def counts(cls, ds):
+  return {cls[v]: n for v,n in Counter([l.item() for _,l in ds]).most_common()}
 

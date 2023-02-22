@@ -117,6 +117,8 @@ if __name__ == "__main__":
     data = runner.dataset()
     net = runner.net()
     env_test = os.environ.get('TEST')
+    print('dataset:')
+    print(dataset.counts(data.classes, data))
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
@@ -124,6 +126,10 @@ if __name__ == "__main__":
         dataset.load(ds_train, oversample=True), \
         dataset.load(ds_test, batch_size=len(ds_test))
       # TODO log value counts from dataset
+      print('valid seed:')
+      print(dataset.counts(data.classes, ds_test))
+      print('train seed:')
+      print(dataset.counts(data.classes, ds_train))
     else:
       dl_train, dl_test = dataset.load(data, oversample=True), None
     trainres, validres, pcres = runner.train(dl_train, dl_test)
