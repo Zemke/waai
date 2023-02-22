@@ -121,7 +121,7 @@ if __name__ == "__main__":
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
       dl_train, dl_test = \
-        dataset.load(ds_train, batch_size=16, oversample=True), \
+        dataset.load(ds_train, oversample=True), \
         dataset.load(ds_test, batch_size=len(ds_test))
       # TODO log value counts from dataset
     else:
