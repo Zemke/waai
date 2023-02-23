@@ -76,13 +76,6 @@ class MultiSet(Dataset):
     tt.transforms.append(T.Normalize(mean=self.mean, std=self.std))
     self.transform = tt
 
-  def counts(self, relative=False):
-    vc = dict(self.df["class"].value_counts())
-    arr = torch.tensor([vc[c] for c in self.classes])
-    if relative:
-      return arr / arr.sum()
-    return arr
-
   def imread(self, idx):
     return read_image(
       os.path.join(self.img_dir, self.df.iloc[idx]["file"]),
@@ -163,24 +156,21 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, batch_size=None, oversample=False, shuffle=True):
+def load(dataset, classes, batch_size=None, weighted=False, shuffle=True):
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
   print('batch size is', bs)
-  if oversample:
-    if isinstance(dataset, MultiSet):
-      ds = dataset
-    elif isinstance(dataset, Subset):
-      ds = dataset.dataset
-    else:
-      raise Exception(f"Unhandled dataset type {type(dataset)}")
-    cnt = 1 / ds.counts()
-    weights = [cnt[ds.classes.index(v)] for v in ds.df["class"].values]
-    sampler = WeightedRandomSampler(weights, len(ds))
-    return DataLoader(ds, batch_size=bs, sampler=sampler)
+  if weighted:
+    cnt = 1 / torch.tensor(counts(classes, dataset))
+    weights = [cnt[v] for _,v in dataset]
+    sampler = WeightedRandomSampler(weights, len(dataset))
+    return DataLoader(dataset, batch_size=bs, sampler=sampler)
   else:
     return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
 
 
-def counts(cls, ds):
-  return {cls[v]: n for v,n in Counter([l.item() for _,l in ds]).most_common()}
+def counts(classes, ds, transl=False):
+  c = Counter([l.item() for _,l in ds])
+  if transl:
+    return {classes[v]: n for v,n in c.most_common()}
+  return [c[i] for i in range(len(c))]
 

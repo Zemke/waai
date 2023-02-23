@@ -118,21 +118,19 @@ if __name__ == "__main__":
     net = runner.net()
     env_test = os.environ.get('TEST')
     print('dataset:')
-    print(dataset.counts(data.classes, data))
+    print(dataset.counts(data.classes, data, transl=True))
     if env_test == '1':
       print('test with split set')
       ds_train, ds_test = dataset.splitset(data)
       dl_train, dl_test = \
-        dataset.load(ds_train, oversample=True), \
-        dataset.load(ds_test, batch_size=len(ds_test))
-      # TODO balance validation dataset
-      # TODO log value counts from dataset
+        dataset.load(ds_train, data.classes, weighted=True), \
+        dataset.load(ds_test, data.classes, weighted=True, batch_size=len(ds_test))
       print('valid seed:')
-      print(dataset.counts(data.classes, ds_test))
+      print(dataset.counts(data.classes, ds_test, transl=True))
       print('train seed:')
-      print(dataset.counts(data.classes, ds_train))
+      print(dataset.counts(data.classes, ds_train, transl=True))
     else:
-      dl_train, dl_test = dataset.load(data, oversample=True), None
+      dl_train, dl_test = dataset.load(data, data.classes, weighted=True), None
     trainres, validres, pcres = runner.train(dl_train, dl_test)
     if os.environ.get("TRAINONLY") != '1':
       visual.plt_res(trainres, validres, pcres, data.classes, runner.epochs)
