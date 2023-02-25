@@ -27,7 +27,6 @@ CLASSES = [*WEAPONS, *ALWAYS, *MAPS]
 
 
 class CaptureMultiSet(Dataset):
-  @torch.no_grad()
   def __init__(self, path):
     img = visual.load(path)
     self.tiles = visual.tile(img, kernel=30, stride=10)
@@ -37,11 +36,9 @@ class CaptureMultiSet(Dataset):
       T.Normalize(mean=MEAN, std=STD)
     ])
 
-  @torch.no_grad()
   def __len__(self):
     return len(self.tiles)
 
-  @torch.no_grad()
   def __getitem__(self, idx):
     return self.transform(self.tiles[idx])
 
