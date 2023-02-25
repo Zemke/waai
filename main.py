@@ -16,6 +16,8 @@ import numpy as np
 
 
 class Runner:
+  weapon = os.getenv("WEAPON", None)
+
   def __init__(self):
     self.epochs = multinet.EPOCHS
   
@@ -25,7 +27,7 @@ class Runner:
     return self.net
 
   def dataset(self):
-    self.ds = dataset.MultiSet(weapon=os.getenv("WEAPON", None))
+    self.ds = dataset.MultiSet(weapon=self.weapon)
     print(f"mean:{self.ds.mean}, std:{self.ds.std}")
     print(f"training on classes: {self.ds.classes}")
     return self.ds
