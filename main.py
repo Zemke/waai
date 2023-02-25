@@ -74,8 +74,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
       raise Exception("cannot combine stdin and source dir")
     fromstdin = visual.loadstdin(sys.stdin)
-    #if fromstdin.shape != (25,25,3):
-    #  raise Exception("shape's gotta be 25,25,3")
   pt = False
   if len(sys.argv) > 1:
     p1 = sys.argv[1]
