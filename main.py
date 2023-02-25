@@ -44,27 +44,37 @@ class Runner:
     args = self.net, loc
     return multinet.save(*args)
     
-  def pred(self):
-    y = multinet.pred(net, dataset.transform(fromstdin))
+  def pred(self, x):
+    y = multinet.pred(net, dataset.transform(x))
     argmax = np.argmax(y)
-    print(y, argmax)
+    # TODO output per class probability
+    # TODO what are the classes for the pretrained model?
     return dataset.CLASSES[argmax], y[argmax]
 
+  def pred_capture(self, paths, target_dir):
+    thres = float(os.getenv('THRES', .8))
+    print(f'output threshold >={thres*100}% per tile')
 
-  def pred_capture(self, paths, target_dir, topn):
-    for i in trange(len(paths)):
+    for i in (progr := trange(len(paths))):
+      f = paths[i].split('/')[-1][:-4]
+      progr.set_postfix(f=f)
       dl = dataset.load(
-          dataset.CaptureMultiSet(
-              paths[i]), batch_size=800*640, shuffle=False)
+        ds := dataset.CaptureMultiSet(paths[i]),
+        # TODO what are the classes for the pretrained model?
+        classes := ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'barrel', 'blood', 'cheese', 'cloud', 'construction', 'desert', 'dungeon', 'dynamite', 'easter', 'flag', 'forest', 'fruit', 'girder', 'gulf', 'healthbar', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'mine', 'music', 'phone', 'pirate', 'puffs', 'sheep', 'snow', 'space', 'sports', 'tentacle', 'text', 'time', 'tools', 'tribal', 'urban', 'water', 'wind', 'worm'],
+        batch_size=len(ds),
+        shuffle=False)
       preds = multinet.pred_capture(self.net, dl)
-      argsorted = preds.argsort(axis=0)
-      for ci in range(len(dataset.CLASSES)):
-        for toparg in argsorted[:,ci][::-1][:topn]:
-          score = round(preds[toparg][ci] * 10000)
-          ts = round(time() * 1000000)
-          visual.write_img(
-              dl.dataset.tiles[toparg], target_dir,
-              f"{dataset.CLASSES[ci]}_{score}_{ts}.png")
+      mx = preds.argmax(1)
+      for i in range(len(ds.tiles)):
+        prob = preds[i][mx[i]]
+        if prob < thres:
+          continue
+        visual.write_img(
+          ds.tiles[i],
+          target_dir,
+          f"{classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+      exit()
 
 
 if __name__ == "__main__":
@@ -93,16 +103,9 @@ if __name__ == "__main__":
         if entry.is_file() and entry.name.lower().endswith('.png'):
           imgs.append(entry.path)
     print(f'reading {len(imgs)} pngs from {src_dir}')
-    topn = os.environ.get('TOPN')
     target_dir = sys.argv[2+pt]
     if not os.path.isdir(target_dir):
       raise Exception(f"{target_dir} not found")
-    if topn is None or "." not in topn:
-      topn = 10 if topn is None else int(topn)
-      print(f'outputting top {topn} matches into {target_dir}')
-    else:
-      topn = float(topn)
-      print(f'outputting probability better than {topn} into {target_dir}')
   if not pt:
     data = runner.dataset()
     net = runner.net()
@@ -135,7 +138,7 @@ trained with only part of the dataset")
         print('saved')
   if pred:
     print('evaluating')
-    runner.pred_capture(imgs, target_dir, topn)
+    runner.pred_capture(imgs, target_dir)
   if fromstdin is not None:
-    print(runner.pred())
+    print(runner.pred(fromstdin))
 

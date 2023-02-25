@@ -33,22 +33,6 @@ def tile(img, kernel=25, stride=2):
   return res
 
 
-def topk(aa, rr, k=100):
-  sargs = np.argsort(rr)[-k:][::-1]
-  return [aa[i] for i in sargs], sargs
-
-
-def topprob(aa, rr, prob=.5):
-  res = []
-  sargs = (-rr).argsort()
-  for i in range(len(sargs)):
-    if rr[sargs[i]] > prob:
-      res.append(aa[sargs[i]])
-    else:
-      break
-  return res, sargs[:len(res)]
-
-
 def plt_res(trainres, validres, pcres, classes, epochs):
   with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
     pickle.dump(

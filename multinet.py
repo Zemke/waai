@@ -155,19 +155,17 @@ def train(net, dl_train, dl_valid=None):
 
 @torch.no_grad()
 def pred_capture(net, dl):
-  res = torch.tensor([], device=device)
-  with tqdm(total=len(dl), leave=False) as bar:
-    for i, b in enumerate(dl):
-      net.eval()
-      y = net(b.to(device))
-      res = torch.cat([res, torch.sigmoid(y.squeeze()).detach()])
-      bar.update()
-  return res.cpu().numpy()
+  assert len(dl) == 1
+  b = next(iter(dl))
+  net.eval()
+  return F.softmax(net(b.to(device)), dim=1).cpu().numpy()
+
 
 @torch.no_grad()
 def pred(net, img):
   net.eval()
-  return torch.sigmoid(net(img.unsqueeze(0).to(device)).squeeze()).item()
+  return F.softmax(net(img.unsqueeze(0).to(device)).squeeze(), 0)
+
 
 def save(net, path):
   return torch.save(net.state_dict(), path)
