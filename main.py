@@ -101,11 +101,6 @@ if __name__ == "__main__":
     else:
       topn = float(topn)
       print(f'outputting probability better than {topn} into {target_dir}')
-    print('continue? [Y/n]', end=': ')
-    cont = input().lower().strip()
-    if cont != 'y' and cont != '':
-      print('okay, exiting')
-      sys.exit()
   if not pt:
     data = runner.dataset()
     net = runner.net()
