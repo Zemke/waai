@@ -153,7 +153,8 @@ def splitset(ds):
 
 def load(dataset, classes, batch_size=None, weighted=False, shuffle=True):
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
-  print('batch size is', bs)
+  if bs != len(dataset):
+    print('batch size is', bs)
   if weighted:
     cnt = 1 / torch.tensor(counts(classes, dataset))
     weights = [cnt[v] for _,v in dataset]
