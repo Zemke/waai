@@ -160,14 +160,14 @@ def pred_capture(net, dl):
     for i, b in enumerate(dl):
       net.eval()
       y = net(b.to(device))
-      res = torch.cat([res, y.squeeze().detach()])
+      res = torch.cat([res, torch.sigmoid(y.squeeze()).detach()])
       bar.update()
   return res.cpu().numpy()
 
 @torch.no_grad()
 def pred(net, img):
   net.eval()
-  return net(img.unsqueeze(0).to(device)).squeeze().item()
+  return torch.sigmoid(net(img.unsqueeze(0).to(device)).squeeze()).item()
 
 def save(net, path):
   return torch.save(net.state_dict(), path)

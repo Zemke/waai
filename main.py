@@ -15,11 +15,6 @@ import visual
 import numpy as np
 
 
-# TODO return "sigmoided" from mutlinet
-def sigmoid(x):
-  return 1/(1+math.e**(-x))
-
-
 class Runner:
   def __init__(self):
     self.epochs = multinet.EPOCHS
@@ -51,7 +46,7 @@ class Runner:
     y = multinet.pred(net, dataset.transform(fromstdin))
     argmax = np.argmax(y)
     print(y, argmax)
-    return dataset.CLASSES[argmax], sigmoid(y[argmax])
+    return dataset.CLASSES[argmax], y[argmax]
 
 
   def pred_capture(self, paths, target_dir, topn):
@@ -63,7 +58,7 @@ class Runner:
       argsorted = preds.argsort(axis=0)
       for ci in range(len(dataset.CLASSES)):
         for toparg in argsorted[:,ci][::-1][:topn]:
-          score = round(sigmoid(preds[toparg][ci]) * 10000)
+          score = round(preds[toparg][ci] * 10000)
           ts = round(time() * 1000000)
           visual.write_img(
               dl.dataset.tiles[toparg], target_dir,
