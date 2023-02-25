@@ -42,11 +42,11 @@ class MultiNet(nn.Module):
     x = self.fc4(x)
     return x
 
-
   def device(self):
     self.to(device)
     print(f"moved net to {device}")
     return self
+
 
 def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
   net.train(train)
@@ -171,6 +171,7 @@ def pred(net, img):
 
 def save(net, path):
   return torch.save(net.state_dict(), path)
+
 
 def pretrained(path):
   state_dict = torch.load(path, map_location=torch.device('cpu'))

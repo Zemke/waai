@@ -15,9 +15,11 @@ from PIL import Image
 def load(path):
   return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
+
 def loadstdin(stdin):
   buff = np.frombuffer(stdin.buffer.read(), dtype='uint8')
   return cv2.cvtColor(cv2.imdecode(buff, 1), cv2.COLOR_BGR2RGB)
+
 
 def tile(img, kernel=25, stride=2):
   res = []
