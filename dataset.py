@@ -36,7 +36,7 @@ CLASSES = [*WEAPONS, *ALWAYS, *MAPS]
 class CaptureMultiSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)
-    self.tiles = visual.tile(img, kernel=30, stride=10)
+    self.tiles = visual.tile(img, kernel=H, stride=W//3)
     self.transform = T.Compose(TRANSFORM)
 
   def __len__(self):
