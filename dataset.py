@@ -20,6 +20,13 @@ import visual
 MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
 C, W, H = 3, 30, 30
 
+TRANSFORM = [
+  T.ToPILImage("RGB"),
+  T.Resize((H,W)),
+  T.ToTensor(),
+  T.Normalize(mean=MEAN, std=STD),
+]
+
 WEAPONS = ["dynamite", "sheep"]
 ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
 MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
@@ -30,11 +37,7 @@ class CaptureMultiSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)
     self.tiles = visual.tile(img, kernel=30, stride=10)
-    self.transform = T.Compose([
-      T.ToTensor(),
-      T.Resize((H,W)),
-      T.Normalize(mean=MEAN, std=STD)
-    ])
+    self.transform = T.Compose(TRANSFORM)
 
   def __len__(self):
     return len(self.tiles)
@@ -62,12 +65,7 @@ class MultiSet(Dataset):
     self.df = df
     self.classes = sorted(df["class"].unique())
 
-    tt = T.Compose([
-      T.ToPILImage("RGB"),
-      T.Resize((H,W)),
-      T.ToTensor(),
-    ])
-
+    tt = T.Compose(TRANSFORM[:-1])
     stck = torch.stack([tt(self.imread(i)) for i in range(len(self.df))])
     self.std, self.mean = torch.std_mean(stck, (0,3,2))
     tt.transforms.append(T.Normalize(mean=self.mean, std=self.std))
@@ -170,4 +168,8 @@ def counts(classes, ds, transl=False):
   if transl:
     return {classes[v]: n for v,n in c.most_common()}
   return [c[i] for i in range(len(c))]
+
+
+def transform(x):
+  return T.Compose(TRANSFORM)(x)
 
