@@ -20,7 +20,7 @@ class Runner:
     self.epochs = multinet.EPOCHS
   
   def pretrained(self, path):
-    self.net = multinet.pretrained(path)
+    self.net = multinet.pretrained(path).device()
     print(f'using existing model {path}')
     return self.net
 
