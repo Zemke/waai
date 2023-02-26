@@ -66,6 +66,7 @@ class MultiSet(Dataset):
     df = pd.read_csv(annotations_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
       raise Exception(f"unknown classes in annotations file: {unkn}")
+    #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
     self.df = df[df["class"].isin(self.classes)]
 
     tt = T.Compose(TRANSFORM[:-1])
