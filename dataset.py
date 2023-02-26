@@ -177,7 +177,8 @@ def classes(weapon=None):
 
 
 def counts(classes, ds, transl=False):
-  c = Counter([l.item() for _,l in ds])
+  c = Counter(l.item() for _,l in ds)
+  c.update(i for i in range(len(classes)))  # there could be missing classes
   if transl:
     return {classes[v]: n for v,n in c.most_common()}
   return [c[i] for i in range(len(c))]
