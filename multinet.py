@@ -138,6 +138,7 @@ def train(net, dl_train, dl_test):
   optim = torch.optim.Adam(net.parameters(), lr=1e-3)
   loss_fn = nn.CrossEntropyLoss(reduction='none')
 
+  mn_loss = torch.inf
   trainloss, trainacc = [], []
   testloss, testacc = [], []
   pcloss, pcacc = [], []
@@ -151,7 +152,11 @@ def train(net, dl_train, dl_test):
     testacc.extend(testres[1])
     pcloss.extend(pcres[0])
     pcacc.extend(pcres[1])
-    # TODO save model if test loss is less than before
+
+    if testloss[-1] < mn_loss:
+      print('saving', name := f"model_{os.getenv('WEAPON', 'all')}.pt")
+      torch.save(net.state_dict(), os.path.join('.', name))
+      mn_loss = testloss[-1]
 
   return (trainloss, trainacc), (testloss, testacc), (pcloss, pcacc)
 
@@ -168,10 +173,6 @@ def pred_capture(net, dl):
 def pred(net, img):
   net.eval()
   return F.softmax(net(img.unsqueeze(0).to(device)).squeeze(), 0)
-
-
-def save(net, path):
-  return torch.save(net.state_dict(), path)
 
 
 def pretrained(path):

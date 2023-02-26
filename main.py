@@ -40,11 +40,6 @@ class Runner:
   def train(self, dl_train, dl_test):
     args = self.net, dl_train, dl_test
     return multinet.train(*args)
-
-  def save(self, loc):
-    args = self.net, loc
-    # TODO incl self.weapon in name and inline more code from __main__
-    return multinet.save(*args)
     
   def pred(self, x):
     y = multinet.pred(net, dataset.transform(x))
