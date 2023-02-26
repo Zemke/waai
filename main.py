@@ -28,16 +28,14 @@ class Runner:
     print(f'using existing model {path}')
     if self.net.num_classes != len(self.classes):
       raise Exception(f"{self.net.num_classes} classes in model but {len(self.classes)} expected")
-    return self.net
+
+  def net(self):
+    self.net = multinet.MultiNet(len(self.classes)).device()
 
   def dataset(self):
     self.ds = dataset.MultiSet(classes=self.classes)
     print(f"mean:{self.ds.mean}, std:{self.ds.std}")
     return self.ds
-
-  def net(self):
-    self.net = multinet.MultiNet(len(self.classes)).device()
-    return self.net
 
   def train(self, dl_train, dl_test):
     args = self.net, dl_train, dl_test
@@ -77,69 +75,78 @@ class Runner:
           f"{self.classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
       exit()
 
+  def help(self):
+    print('                   predict single image: main.py model.pt image.png')
+    print('         mass inference from source dir: main.py model.pt source/')
+    print('tile captures and inference into target: main.py model.pt source/ target/')
+    print('                      train a new model: main.py')
+
 
 if __name__ == "__main__":
   runner = Runner()
+  if len(sys.argv) == 2 and sys.argv[1].startswith('-h'):
+    runnter.help()
+    exit()
 
-  fromstdin = None
-  if select.select([sys.stdin, ], [], [], 0.0)[0]:
-    # data from stdin
-    if len(sys.argv) > 2:
-      raise Exception("cannot combine stdin and source dir")
-    fromstdin = visual.loadstdin(sys.stdin)
-  pt = False
-  if len(sys.argv) > 1:
-    p1 = sys.argv[1]
-    pt = p1.endswith('.pt') or p1.endswith('.pth')
-    if pt:
-      if not os.path.isfile(p1):
-        raise Exception(f'{p1} is not a file')
-      net = runner.pretrained(os.path.join(p1))
-  pred = len(sys.argv) > 2
-  if pred:
-    src_dir = sys.argv[1+pt]
-    imgs = []
-    with os.scandir(src_dir) as it:
-      for entry in it:
-        if entry.is_file() and entry.name.lower().endswith('.png'):
-          imgs.append(entry.path)
-    print(f'reading {len(imgs)} pngs from {src_dir}')
-    target_dir = sys.argv[2+pt]
-    if not os.path.isdir(target_dir):
-      raise Exception(f"{target_dir} not found")
-  if not pt:
+  # pretrained model
+  if len(sys.argv) > 2:
+    if sys.argv[1].endswith('.pt') or sys.argv[1].endswith('.pth'):
+      # TODO net var in Runner?
+      runner.pretrained(path := os.path.join(sys.argv[1]))
+      print('using pretrained model', path)
+    else:
+      print(
+        "first param neeeds to be a PyTorch saved model ending in .pt or .pth",
+        file=sys.stderr)
+      exit(2)
+
+    if len(sys.argv) == 3:
+      src = os.path.join(sys.argv[2])
+      if os.path.isdir(src):
+        # mass predict images
+        print('mass predicting images is not yet supported.', file=sys.stderr)
+        exit(3)
+      elif os.path.isfile(src):
+        # predict single image
+        print('predicting single image', src)
+        print(runner.pred(visual.load(src)))
+        exit()
+    elif len(sys.argv) == 4:
+      # predicting tiled captures
+      src_dir, target_dir = sys.argv[2], sys.argv[3]
+      imgs = []
+      with os.scandir(src_dir) as it:
+        for entry in it:
+          if entry.is_file() and entry.name.lower().endswith('.png'):
+            imgs.append(entry.path)
+      if not os.path.isdir(target_dir):
+        raise Exception(f"{target_dir} not found")
+      print(runner.pred_capture(imgs, target_dir))
+      exit()
+
+  # train new model
+  elif len(sys.argv) == 1:
     data = runner.dataset()
-    net = runner.net()
-    env_test = os.environ.get('TEST')
+    runner.net()
     print('dataset:')
     print(dataset.counts(data.classes, data, transl=True))
-    if env_test == '1':
-      print('test with split set')
+    if os.environ.get('TEST') == '1':
+      print('test with out-of-sample data')
       ds_train, ds_test = dataset.splitset(data)
       dl_train, dl_test = \
         dataset.load(ds_train, data.classes, weighted=True), \
         dataset.load(ds_test, data.classes, weighted=True, batch_size=len(ds_test))
-      print('valid seed:')
+      print('test seed:')
       print(dataset.counts(data.classes, ds_test, transl=True))
       print('train seed:')
       print(dataset.counts(data.classes, ds_train, transl=True))
     else:
       dl_train, dl_test = dataset.load(data, data.classes, weighted=True), None
-    trainres, validres, pcres = runner.train(dl_train, dl_test)
-    if os.environ.get("TRAINONLY") != '1':
-      visual.plt_res(trainres, validres, pcres, data.classes, runner.epochs)
-    if env_test:
-      print("saving model with test flag is not possible as it was \
-trained with only part of the dataset")
-    else:
-      loc = "./model_multinet.pt"
-      print(f'overwrite model to {loc}? [Y/n]', end=' ')
-      if input().strip().lower() != 'n':
-        runner.save(loc)
-        print('saved')
-  if pred:
-    print('evaluating')
-    runner.pred_capture(imgs, target_dir)
-  if fromstdin is not None:
-    print(runner.pred(fromstdin))
+    trainres, testres, pcres = runner.train(dl_train, dl_test)
+    visual.plt_res(trainres, testres, pcres, data.classes, runner.epochs)
+
+  else:
+    print("invalid number of parameters", file=sys.stderr)
+    runner.help()
+    exit(10)
 

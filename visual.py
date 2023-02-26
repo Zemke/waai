@@ -33,19 +33,19 @@ def tile(img, kernel=25, stride=2):
   return res
 
 
-def plt_res(trainres, validres, pcres, classes, epochs):
+def plt_res(trainres, testres, pcres, classes, epochs):
   with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
     pickle.dump(
       dict(
         trainres=trainres,
-        validres=validres,
+        testres=testres,
         pcres=pcres,
         classes=classes,
         epochs=epochs),
       f)
 
   trainloss, trainacc = trainres
-  validloss, validacc = validres
+  testloss, testacc = testres
   pcloss, pcacc = [np.concatenate(x).reshape((-1,len(classes))).transpose((1,0)) for x in pcres]
 
   plt.style.use("dark_background")
@@ -57,11 +57,11 @@ def plt_res(trainres, validres, pcres, classes, epochs):
   lsb = np.linspace(1, epochs, pcloss.shape[1])
 
   lossax.plot(lsa, trainloss, label='train')
-  lossax.plot(lsa, validloss, label='valid')
+  lossax.plot(lsa, testloss, label='test')
   lossax.set_ylabel('mean loss')
 
   accax.plot(lsa, trainacc, label='train')
-  accax.plot(lsa, validacc, label='valid')
+  accax.plot(lsa, testacc, label='test')
   accax.set_ylabel('mean accuracy')
 
   pclosslines = []

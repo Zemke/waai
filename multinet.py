@@ -48,9 +48,9 @@ class MultiNet(nn.Module):
     return self
 
 
-def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
+def _do(net, dl_train, dl_test, loss_fn, optim, train=False):
   net.train(train)
-  dl = dl_train if train else dl_valid
+  dl = dl_train if train else dl_test
 
   losses, accs = [], []
   losses_val, accs_val = [], []
@@ -113,13 +113,13 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
         running_acc_pc, running_loss_pc = \
           torch.zeros(net.num_classes, device=device), \
           torch.zeros(net.num_classes, device=device)
-      if train and os.environ.get("TRAINONLY") != '1':
+      if train and os.environ.get("TEST") != '1':
         with torch.no_grad():
-          validres = _do(net, dl_train, dl_valid, loss_fn, None)
-          losses_val.append(sum(validres[0])/len(validres[0]))
-          accs_val.append(sum(validres[1])/len(validres[1]))
-          losses_pc.append(sum(validres[2])/len(validres[2]))
-          accs_pc.append(sum(validres[3])/len(validres[3]))
+          testres = _do(net, dl_train, dl_test, loss_fn, None)
+          losses_val.append(sum(testres[0])/len(testres[0]))
+          accs_val.append(sum(testres[1])/len(testres[1]))
+          losses_pc.append(sum(testres[2])/len(testres[2]))
+          accs_pc.append(sum(testres[3])/len(testres[3]))
         progr.set_postfix(
             loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
             val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
@@ -132,25 +132,26 @@ def _do(net, dl_train, dl_valid, loss_fn, optim, train=False):
     return losses, accs, losses_pc, accs_pc
 
 
-def train(net, dl_train, dl_valid=None):
+def train(net, dl_train, dl_test=None):
   optim = torch.optim.Adam(net.parameters(), lr=1e-3)
   loss_fn = nn.CrossEntropyLoss(reduction='none')
 
   trainloss, trainacc = [], []
-  validloss, validacc = [], []
+  testloss, testacc = [], []
   pcloss, pcacc = [], []
   for epoch in range(EPOCHS):
     print(f"{epoch+1:02} of {EPOCHS:02}")
-    trainres, validres, pcres = \
-        _do(net, dl_train, dl_valid or dl_train, loss_fn, optim, True)
+    trainres, testres, pcres = \
+        _do(net, dl_train, dl_test or dl_train, loss_fn, optim, True)
     trainloss.extend(trainres[0])
     trainacc.extend(trainres[1])
-    validloss.extend(validres[0])
-    validacc.extend(validres[1])
+    testloss.extend(testres[0])
+    testacc.extend(testres[1])
     pcloss.extend(pcres[0])
     pcacc.extend(pcres[1])
+    # TODO save model if test loss is less than before
 
-  return (trainloss, trainacc), (validloss, validacc), (pcloss, pcacc)
+  return (trainloss, trainacc), (testloss, testacc), (pcloss, pcacc)
 
 
 @torch.no_grad()
