@@ -18,6 +18,7 @@ device = torch.device(
   'mps' if torch.backends.mps.is_available() else
   'cpu') if os.getenv("GPU", False) == "1" else "cpu"
 
+
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
@@ -48,7 +49,7 @@ class MultiNet(nn.Module):
     return self
 
 
-def _do(net, dl_train, dl_test, loss_fn, optim, train=False):
+def _do(net, dl_train, dl_test, loss_fn, optim, train):
   net.train(train)
   dl = dl_train if train else dl_test
 
@@ -61,6 +62,7 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train=False):
   running_acc_pc, running_loss_pc = \
     torch.zeros(net.num_classes, device=device), \
     torch.zeros(net.num_classes, device=device)
+
   progr = tqdm(dl,
                leave=train,
                colour='yellow' if train else 'green',
@@ -113,9 +115,9 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train=False):
         running_acc_pc, running_loss_pc = \
           torch.zeros(net.num_classes, device=device), \
           torch.zeros(net.num_classes, device=device)
-      if train and os.environ.get("TEST") != '1':
+      if train:
         with torch.no_grad():
-          testres = _do(net, dl_train, dl_test, loss_fn, None)
+          testres = _do(net, dl_train, dl_test, loss_fn, None, False)
           losses_val.append(sum(testres[0])/len(testres[0]))
           accs_val.append(sum(testres[1])/len(testres[1]))
           losses_pc.append(sum(testres[2])/len(testres[2]))
@@ -132,7 +134,7 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train=False):
     return losses, accs, losses_pc, accs_pc
 
 
-def train(net, dl_train, dl_test=None):
+def train(net, dl_train, dl_test):
   optim = torch.optim.Adam(net.parameters(), lr=1e-3)
   loss_fn = nn.CrossEntropyLoss(reduction='none')
 
@@ -141,8 +143,8 @@ def train(net, dl_train, dl_test=None):
   pcloss, pcacc = [], []
   for epoch in range(EPOCHS):
     print(f"{epoch+1:02} of {EPOCHS:02}")
-    trainres, testres, pcres = \
-        _do(net, dl_train, dl_test or dl_train, loss_fn, optim, True)
+    trainres, testres, pcres = _do(net, dl_train, dl_test, loss_fn, optim, True)
+
     trainloss.extend(trainres[0])
     trainacc.extend(trainres[1])
     testloss.extend(testres[0])
