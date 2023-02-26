@@ -27,10 +27,14 @@ TRANSFORM = [
   T.Normalize(mean=MEAN, std=STD),
 ]
 
-WEAPONS = ["dynamite", "sheep"]
-ALWAYS = ["barrel", "cloud", "puffs", "worm", "crate", "debris", "flag", "girder", "healthbar", "phone", "rope", "text", "water", "wind", "mine"]
-MAPS = ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban']
-CLASSES = [*WEAPONS, *ALWAYS, *MAPS]
+# TODO atm there's no diff btw girder part of map and user-deployed girder
+WEAPONS = {"dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"}
+ALWAYS = {"mine", 'phone', 'cloud', 'puffs', 'water', 'barrel', 'flag', 'worm', 'text', 'girder', 'healthbar', 'wind', 'blood'}
+MAPS = {'-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban'}
+CLASSES = WEAPONS | ALWAYS | MAPS
+
+if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
+  raise Exception("There are duplicate classes.")
 
 
 class CaptureMultiSet(Dataset):
