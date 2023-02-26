@@ -55,23 +55,18 @@ class CaptureMultiSet(Dataset):
 
 
 class MultiSet(Dataset):
-
   def __init__(self,
-               weapon=None,
+               classes,
                augment=False,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
     self.img_dir = img_dir
+    self.classes = classes
 
     df = pd.read_csv(annotations_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
-      raise Exception(f"unknown classes: {unkn}")
-    if weapon is not None:
-      assert weapon in WEAPONS or weapon == 'mine'
-      # filter all other weapons
-      df = df[~df["class"].isin([w for w in WEAPONS if w != weapon])]
-    self.df = df
-    self.classes = sorted(df["class"].unique())
+      raise Exception(f"unknown classes in annotations file: {unkn}")
+    self.df = df[df["class"].isin(self.classes)]
 
     tt = T.Compose(TRANSFORM[:-1])
     stck = torch.stack([tt(self.imread(i)) for i in range(len(self.df))])
@@ -159,17 +154,25 @@ def splitset(ds):
   return train, test
 
 
-def load(dataset, classes, batch_size=None, weighted=False, shuffle=True):
+def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
   if bs != len(dataset):
     print('batch size is', bs)
   if weighted:
+    if classes is None:
+      raise Exception("classes must not be None for weighted sampling")
     cnt = 1 / torch.tensor(counts(classes, dataset))
     weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     return DataLoader(dataset, batch_size=bs, sampler=sampler)
   else:
     return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
+
+
+def classes(weapon=None):
+  if weapon is None:
+    return sorted(CLASSES)
+  return sorted((CLASSES - WEAPONS) | {weapon})
 
 
 def counts(classes, ds, transl=False):

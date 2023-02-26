@@ -20,20 +20,23 @@ class Runner:
 
   def __init__(self):
     self.epochs = multinet.EPOCHS
+    self.classes = dataset.classes(self.weapon)
+    print("classes:", self.weapon, len(self.classes), self.classes)
   
   def pretrained(self, path):
     self.net = multinet.pretrained(path).device()
     print(f'using existing model {path}')
+    if self.net.num_classes != len(self.classes):
+      raise Exception(f"{self.net.num_classes} classes in model but {len(self.classes)} expected")
     return self.net
 
   def dataset(self):
-    self.ds = dataset.MultiSet(weapon=self.weapon)
+    self.ds = dataset.MultiSet(classes=self.classes)
     print(f"mean:{self.ds.mean}, std:{self.ds.std}")
-    print(f"training on classes: {self.ds.classes}")
     return self.ds
 
   def net(self):
-    self.net = multinet.MultiNet(len(self.ds.classes)).device()
+    self.net = multinet.MultiNet(len(self.classes)).device()
     return self.net
 
   def train(self, dl_train, dl_test):
@@ -42,14 +45,14 @@ class Runner:
 
   def save(self, loc):
     args = self.net, loc
+    # TODO incl self.weapon in name and inline more code from __main__
     return multinet.save(*args)
     
   def pred(self, x):
     y = multinet.pred(net, dataset.transform(x))
     argmax = np.argmax(y)
     # TODO output per class probability
-    # TODO what are the classes for the pretrained model?
-    return dataset.CLASSES[argmax], y[argmax]
+    return self.classes[argmax], y[argmax]
 
   def pred_capture(self, paths, target_dir):
     thres = float(os.getenv('THRES', .8))
@@ -60,8 +63,6 @@ class Runner:
       progr.set_postfix(f=f)
       dl = dataset.load(
         ds := dataset.CaptureMultiSet(paths[i]),
-        # TODO what are the classes for the pretrained model?
-        classes := ['-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'barrel', 'blood', 'cheese', 'cloud', 'construction', 'desert', 'dungeon', 'dynamite', 'easter', 'flag', 'forest', 'fruit', 'girder', 'gulf', 'healthbar', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'mine', 'music', 'phone', 'pirate', 'puffs', 'sheep', 'snow', 'space', 'sports', 'tentacle', 'text', 'time', 'tools', 'tribal', 'urban', 'water', 'wind', 'worm'],
         batch_size=len(ds),
         shuffle=False)
       preds = multinet.pred_capture(self.net, dl)
@@ -73,7 +74,7 @@ class Runner:
         visual.write_img(
           ds.tiles[i],
           target_dir,
-          f"{classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+          f"{self.classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
       exit()
 
 
