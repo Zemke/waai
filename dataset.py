@@ -41,7 +41,10 @@ if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
 class CaptureMultiSet(Dataset):
   def __init__(self, path):
     img = visual.load(path)
-    self.tiles = visual.tile(img, kernel=H, stride=W//3)
+    div,mod = divmod(W, 3)
+    if mod > 0:
+      print(f"tiling missing last {mod} pixels on the right of each tile")
+    self.tiles = visual.tile(img, kernel=H, stride=div)
     self.transform = T.Compose(TRANSFORM)
 
   def __len__(self):
