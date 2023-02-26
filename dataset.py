@@ -17,7 +17,7 @@ import pandas as pd
 import visual
 
 
-MEAN, STD = (.4134, .3193, .2627), (.3083, .2615, .2476)
+MEAN, STD = ([0.4345, 0.3300, 0.2447]), (0.2825, 0.2422, 0.2625)
 C, W, H = 3, 30, 30
 
 TRANSFORM = [
