@@ -70,7 +70,8 @@ class Runner:
           f"{self.classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
       exit()
 
-  def help(self):
+  @staticmethod
+  def help():
     print('                   predict single image: main.py model.pt image.png')
     print('         mass inference from source dir: main.py model.pt source/')
     print('tile captures and inference into target: main.py model.pt source/ target/')
@@ -78,10 +79,10 @@ class Runner:
 
 
 if __name__ == "__main__":
-  runner = Runner()
   if len(sys.argv) == 2 and sys.argv[1].startswith('-h'):
-    runner.help()
+    Runner.help()
     exit()
+  runner = Runner()
 
   # pretrained model
   if len(sys.argv) > 2:
