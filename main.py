@@ -86,7 +86,6 @@ if __name__ == "__main__":
   # pretrained model
   if len(sys.argv) > 2:
     if sys.argv[1].endswith('.pt') or sys.argv[1].endswith('.pth'):
-      # TODO net var in Runner?
       runner.pretrained(path := os.path.join(sys.argv[1]))
       print('using pretrained model', path)
     else:
