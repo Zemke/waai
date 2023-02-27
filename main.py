@@ -80,7 +80,7 @@ class Runner:
 if __name__ == "__main__":
   runner = Runner()
   if len(sys.argv) == 2 and sys.argv[1].startswith('-h'):
-    runnter.help()
+    runner.help()
     exit()
 
   # pretrained model
