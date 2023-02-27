@@ -150,9 +150,7 @@ class MultiSet(Dataset):
 
 
 def splitset(ds):
-  splits = [ceil(len(ds)*.8), floor(len(ds)*.2)]
-  train, test = random_split(ds, splits, torch.Generator().manual_seed(42))
-  return train, test
+  return random_split(ds, (.8, .2), torch.Generator().manual_seed(42))
 
 
 def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
