@@ -122,13 +122,9 @@ if __name__ == "__main__":
   elif len(sys.argv) == 1:
     data = runner.dataset()
     runner.net()
-    print('dataset:', dataset.counts(data.classes, data, transl=True))
     ds_train, ds_test = dataset.splitset(data)
-    print('test seed:', x := dataset.counts(runner.classes, ds_test, transl=True))
-    print('train seed:', y := dataset.counts(runner.classes, ds_train, transl=True))
-    dl_train, dl_test = \
-      dataset.load(ds_train, runner.classes, weighted=True), \
-      dataset.load(ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
+    dl_train = dataset.load(ds_train, runner.classes, weighted=True)
+    dl_test = dataset.load(ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
     trainres, testres, pcres = runner.train(dl_train, dl_test)
     visual.plt_res(trainres, testres, pcres, data.classes, runner.epochs)
 

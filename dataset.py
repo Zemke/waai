@@ -156,7 +156,7 @@ def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
-    cnt = 1 / torch.tensor(counts(classes, dataset))
+    cnt = 1 / torch.tensor(counts(classes, dataset, log=True))
     weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     return DataLoader(dataset, batch_size=bs, sampler=sampler)
@@ -170,11 +170,11 @@ def classes(weapon=None):
   return sorted((CLASSES - WEAPONS) | {weapon})
 
 
-def counts(classes, ds, transl=False):
+def counts(classes, ds, log=False):
   c = Counter(l.item() for _,l in ds)
   c.update(i for i in range(len(classes)))  # there could be missing classes
-  if transl:
-    return {classes[v]: n for v,n in c.most_common()}
+  if log:
+    print({classes[v]: n for v,n in c.most_common()})
   return [c[i] for i in range(len(c))]
 
 
