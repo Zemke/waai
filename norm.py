@@ -38,8 +38,7 @@ if __name__ == "__main__":
   assert d.shape == (len(ds), 3, dataset.H, dataset.W)
 
   def norm(dd):
-    cat = torch.cat([torch.unsqueeze(Normalize(std=std, mean=mean)(d), 0) for d in dd], 0)
-    return torch.std_mean(cat, (0,2,3))
+    return torch.std_mean(torch.stack([Normalize(std=std, mean=mean)(d) for d in dd]), (0,2,3))
 
   print('shape of data X, C, H, W:', d.shape)
   std, mean = torch.std_mean(d, (0,2,3))
