@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -20,7 +21,7 @@ if __name__ == "__main__":
     exit()
 
   import dataset
-  ds = dataset.splitset(dataset.MultiSet(classes := dataset.classes()))[0]
+  ds = dataset.splitset(dataset.MultiSet(classes := dataset.classes(os.getenv("WEAPON", None))))[0]
 
   # remove all existing normalization
   tt = ds.dataset.transform.transforms
