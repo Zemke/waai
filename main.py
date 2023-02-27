@@ -127,6 +127,7 @@ if __name__ == "__main__":
     dl_test = dataset.load(ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
     trainres, testres, pcres = runner.train(dl_train, dl_test)
     visual.plt_res(trainres, testres, pcres, data.classes, runner.epochs)
+    exit()
 
   else:
     print("invalid number of parameters", file=sys.stderr)
