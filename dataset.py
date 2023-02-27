@@ -15,6 +15,7 @@ from PIL import Image
 import pandas as pd
 
 import visual
+from augment import augment
 
 
 STD, MEAN = (0.301, 0.262, 0.283), (0.401, 0.311, 0.256)
@@ -57,7 +58,6 @@ class CaptureMultiSet(Dataset):
 class MultiSet(Dataset):
   def __init__(self,
                classes,
-               augment=False,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
     self.img_dir = img_dir
@@ -81,7 +81,7 @@ class MultiSet(Dataset):
 
   def __getitem__(self, idx):
     clazz = self.df.iloc[idx]["class"]
-    transform = T.Compose([*self.transform.transforms, *self._augments(clazz)])
+    transform = T.Compose([*self.transform.transforms, *augment(clazz)])
     # imshow augmentation
     #if clazz == 'mine':
     #  import matplotlib.pyplot as plt
@@ -94,55 +94,6 @@ class MultiSet(Dataset):
     return \
       transform(self.imread(idx)), \
       torch.tensor(self.classes.index(clazz))
-
-  def _augments(self, clazz):
-    if clazz == 'worm':
-      tt = [
-        T.RandomAffine(degrees=0, translate=(.3,.3)),
-        T.RandomHorizontalFlip(p=.5),
-      ]
-    elif clazz == 'mine':
-      tt = [
-        T.RandomRotation(40),
-        T.RandomAffine(degrees=0, translate=(.2,.2)),
-        T.RandomHorizontalFlip(p=.5),
-      ]
-    elif clazz == 'barrel':
-      tt = [T.RandomAffine(degrees=0, translate=(.4,.4))]
-    elif clazz == 'dynamite':
-      tt = [T.RandomAffine(degrees=0, translate=(.2,.2))]
-    elif clazz == 'sheep':
-      tt = [
-        T.RandomHorizontalFlip(p=.5),
-        T.RandomAffine(degrees=0, translate=(.2,.2)),
-      ]
-    elif clazz in MAPS:
-      tt = [T.RandomHorizontalFlip(p=.5)]
-    elif clazz == "debris":
-      tt = [
-        T.RandomPerspective(distortion_scale=.2, p=.5),
-        T.RandomAffine(degrees=180, translate=(.2,.2)),
-      ]
-    elif clazz == "water" or clazz == "cloud":
-      tt = [
-        T.RandomHorizontalFlip(p=.5),
-        T.RandomAffine(degrees=0, translate=(.2,.2)),
-      ]
-    elif clazz == "rope":
-      tt = [
-        T.RandomAffine(degrees=180, translate=(.3,.3)),
-      ]
-    elif clazz == "crate":
-      tt = [
-        T.RandomAffine(degrees=30, translate=(.5,.5)),
-      ]
-    elif clazz in ["text", "crate", "puffs", "phone", "healthbar", "girder", "flag"]:
-      tt = [
-        T.RandomAffine(degrees=0, translate=(.1,.1)),
-      ]
-    else:
-      tt = []
-    return tt
 
 
 def splitset(ds):
