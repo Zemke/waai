@@ -34,7 +34,6 @@ class Runner:
 
   def dataset(self):
     self.ds = dataset.MultiSet(classes=self.classes)
-    print(f"mean:{self.ds.mean}, std:{self.ds.std}")
     return self.ds
 
   def train(self, dl_train, dl_test):
