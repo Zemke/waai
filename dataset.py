@@ -17,14 +17,14 @@ import pandas as pd
 import visual
 
 
-MEAN, STD = ([0.4345, 0.3300, 0.2447]), (0.2825, 0.2422, 0.2625)
+STD, MEAN = (0.301, 0.262, 0.283), (0.401, 0.311, 0.256)
 C, W, H = 3, 30, 30
 
 TRANSFORM = [
   T.ToPILImage("RGB"),
   T.Resize((H,W)),
   T.ToTensor(),
-  T.Normalize(mean=MEAN, std=STD),
+  T.Normalize(std=STD, mean=MEAN),
 ]
 
 # all future weapons: "dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"
@@ -62,6 +62,7 @@ class MultiSet(Dataset):
                img_dir='./dataset'):
     self.img_dir = img_dir
     self.classes = classes
+    self.transform = T.Compose(TRANSFORM)
 
     df = pd.read_csv(annotations_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
@@ -69,11 +70,6 @@ class MultiSet(Dataset):
     #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
     self.df = df[df["class"].isin(self.classes)]
 
-    tt = T.Compose(TRANSFORM[:-1])
-    stck = torch.stack([tt(self.imread(i)) for i in range(len(self.df))])
-    self.std, self.mean = torch.std_mean(stck, (0,3,2))
-    tt.transforms.append(T.Normalize(mean=self.mean, std=self.std))
-    self.transform = tt
 
   def imread(self, idx):
     return read_image(
