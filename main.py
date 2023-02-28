@@ -121,8 +121,11 @@ if __name__ == "__main__":
   # train new model
   elif len(sys.argv) == 1:
     data = runner.dataset()
+    print('all data', dataset.counts(data, transl=True))
     runner.net()
     ds_train, ds_test = dataset.splitset(data)
+    print('train data', dataset.counts(ds_train, transl=True))
+    print('test data', dataset.counts(ds_test, transl=True))
     dl_train = dataset.load(ds_train, runner.classes, weighted=True)
     dl_test = dataset.load(ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
     trainres, testres, pcres = runner.train(dl_train, dl_test)

@@ -3,6 +3,7 @@
 import os
 from math import ceil, floor
 from collections import Counter
+from contextlib import contextmanager
 
 import torch
 from torch.utils.data import \
@@ -56,13 +57,17 @@ class CaptureMultiSet(Dataset):
 
 
 class MultiSet(Dataset):
+
   def __init__(self,
                classes,
                annotations_file='./dataset/annot.csv',
                img_dir='./dataset'):
+    self.dataset = self
+    self._ctx_skip_imread = False
+    self._ctx_skip_augment = False
+
     self.img_dir = img_dir
     self.classes = classes
-    self.transform = T.Compose(TRANSFORM)
 
     df = pd.read_csv(annotations_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
@@ -70,30 +75,44 @@ class MultiSet(Dataset):
     #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
     self.df = df[df["class"].isin(self.classes)]
 
-
-  def imread(self, idx):
-    return read_image(
-      os.path.join(self.img_dir, self.df.iloc[idx]["file"]),
-      ImageReadMode.RGB)
-
   def __len__(self):
     return len(self.df)
 
   def __getitem__(self, idx):
-    clazz = self.df.iloc[idx]["class"]
-    transform = T.Compose([*self.transform.transforms, *augment(clazz)])
+    file, clazz = self.df.iloc[idx]
+    label = torch.tensor(self.classes.index(clazz))
+    if self._ctx_skip_imread:
+      return None, label
+    transform = [*TRANSFORM]
+    if not self._ctx_skip_augment:
+      transform.extend(augment(clazz))
     # imshow augmentation
     #if clazz == 'mine':
     #  import matplotlib.pyplot as plt
     #  import numpy as np
     #  from time import sleep
-    #  x = transform(self.imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
+    #  x = transform(self._imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
     #  plt.imshow(x.permute((1,2,0)))
     #  plt.show()
-    #  sleep(1)
-    return \
-      transform(self.imread(idx)), \
-      torch.tensor(self.classes.index(clazz))
+    #  sleep(.5)
+    img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
+    return transform(img), label
+
+  @contextmanager
+  def skip_imread(self, *args, **kwargs):
+    return self._skip_anything('imread')
+
+  @contextmanager
+  def skip_augment(self, *args, **kwargs):
+    return self._skip_anything('augment')
+
+  def _skip_anything(self, anything):
+    attr = "_ctx_skip_" + anything
+    try:
+      setattr(self, attr, True)
+      yield self
+    finally:
+      setattr(self, attr, False)
 
 
 def splitset(ds):
@@ -107,7 +126,7 @@ def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
-    cnt = 1 / torch.tensor(counts(classes, dataset, log=True))
+    cnt = 1 / torch.tensor(dataset.counts(dataset))
     weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     return DataLoader(dataset, batch_size=bs, sampler=sampler)
@@ -121,12 +140,13 @@ def classes(weapon=None):
   return sorted((CLASSES - WEAPONS) | {weapon})
 
 
-def counts(classes, ds, log=False):
-  c = Counter(l.item() for _,l in ds)
-  c.update(i for i in range(len(classes)))  # there could be missing classes
-  if log:
-    print({classes[v]: n for v,n in c.most_common()})
-  return [c[i] for i in range(len(c))]
+def counts(ds, transl=False):
+  with ds.dataset.skip_imread():
+    c = Counter(l.item() for _,l in ds)
+    c.update(i for i in range(len(ds.classes)))  # there could be missing classes
+    if transl:
+      return {ds.classes[v]: n for v,n in c.most_common()}
+    return [c[i] for i in range(len(c))]
 
 
 def transform(x):
