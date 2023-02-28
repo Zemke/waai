@@ -28,9 +28,9 @@ TRANSFORMS = [
 ]
 
 # all future weapons: "dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"
-# TODO atm there's no diff btw girder part of map and user-deployed girder
 WEAPONS = {"dynamite", "sheep"}
-ALWAYS = {"mine", 'phone', 'cloud', 'puffs', 'water', 'barrel', 'flag', 'worm', 'text', 'girder', 'healthbar', 'wind', 'blood'}
+# TODO atm there's no diff btw girder part of map and user-deployed girder
+ALWAYS = {'bg', 'blood', 'barrel', 'text', 'water', 'cloud', 'girder', 'worm', 'mine', 'puffs'}
 MAPS = {'-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban'}
 CLASSES = WEAPONS | ALWAYS | MAPS
 
@@ -201,7 +201,7 @@ def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
-    cnt = 1 / torch.tensor(dataset.counts(dataset))
+    cnt = 1 / torch.tensor(counts(dataset))
     weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     return DataLoader(dataset, batch_size=bs, sampler=sampler)
@@ -218,9 +218,9 @@ def classes(weapon=None):
 def counts(ds, transl=False):
   with ds.dataset.skip_imread():
     c = Counter(l.item() for _,l in ds)
-    c.update(i for i in range(len(ds.classes)))  # there could be missing classes
+    c.update(i for i in range(len(ds.dataset.classes)))  # there could be missing classes
     if transl:
-      return {ds.classes[v]: n for v,n in c.most_common()}
+      return {ds.dataset.classes[v]: n for v,n in c.most_common()}
     return [c[i] for i in range(len(c))]
 
 
