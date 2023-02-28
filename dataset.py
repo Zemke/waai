@@ -68,6 +68,7 @@ class MultiSet(Dataset):
 
     self.img_dir = img_dir
     self.classes = classes
+    assert isinstance(self.classes, list)
 
     df = pd.read_csv(annotations_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
