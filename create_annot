@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd dataset
+cd samples
 echo "file,class" > annot.csv
 
 tot=0

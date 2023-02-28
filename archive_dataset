@@ -1,1 +1,0 @@
-tar vczf dataset.tar.gz $(find dataset/* -type d -maxdepth 0)

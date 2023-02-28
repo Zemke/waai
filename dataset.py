@@ -57,20 +57,18 @@ class CaptureMultiSet(Dataset):
 
 
 class MultiSet(Dataset):
+  annot_file = './samples/annot.csv'
+  img_dir = './samples'
 
-  def __init__(self,
-               classes,
-               annotations_file='./dataset/annot.csv',
-               img_dir='./dataset'):
+  def __init__(self, classes):
     self.dataset = self
     self._ctx_skip_imread = False
     self._ctx_skip_augment = False
 
-    self.img_dir = img_dir
+    assert isinstance(classes, list)
     self.classes = classes
-    assert isinstance(self.classes, list)
 
-    df = pd.read_csv(annotations_file)
+    df = pd.read_csv(self.annot_file)
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
       raise Exception(f"unknown classes in annotations file: {unkn}")
     #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
