@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from collections import Counter
 from contextlib import contextmanager
 
@@ -35,6 +36,84 @@ CLASSES = WEAPONS | ALWAYS | MAPS
 
 if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
   raise Exception("There are duplicate classes.")
+
+AUG = {
+  "water": [
+    T.RandomResizedCrop((H, W)),
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "text": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "cloud": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "girder": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "barrel": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "blood": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=180, translate=(.2,.2)),
+  ],
+  "bg": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "mine": [
+    T.RandomAffine(degrees=180, translate=(.2,.2)),
+    T.RandomHorizontalFlip(p=.5),
+  ],
+  "worm": [
+    T.RandomAffine(degrees=20, translate=(.2,.2)),
+    T.RandomHorizontalFlip(p=.5),
+  ],
+  "dynamite": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+  ],
+  "puffs": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=180, translate=(.2,.2)),
+  ],
+  "sheep": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W)),
+  ],
+}
+
+for k in AUG.keys():
+  if k not in CLASSES: print("augmentation for non-existing class", k)
+
+AUG_MAP = [T.RandomHorizontalFlip(p=.5),]
+
+
+def augment(clazz):
+  if clazz in MAPS:
+    return AUG_MAP
+  if clazz in AUG:
+    return AUG[clazz]
+  print("no augmentation for", clazz, file=sys.stderr)
+  return []
 
 
 class CaptureMultiSet(Dataset):
