@@ -14,13 +14,12 @@ from PIL import Image
 import pandas as pd
 
 import visual
-from augment import augment
 
 
 STD, MEAN = (0.301, 0.262, 0.283), (0.401, 0.311, 0.256)
 C, W, H = 3, 30, 30
 
-TRANSFORM = [
+TRANSFORMS = [
   T.ToPILImage("RGB"),
   T.Resize((H,W)),
   T.ToTensor(),
@@ -45,7 +44,7 @@ class CaptureMultiSet(Dataset):
     if mod > 0:
       print(f"tiling missing last {mod} pixels on the right of each tile")
     self.tiles = visual.tile(img, kernel=H, stride=div)
-    self.transform = T.Compose(TRANSFORM)
+    self.transform = T.Compose(TRANSFORMS)
 
   def __len__(self):
     return len(self.tiles)
@@ -80,20 +79,20 @@ class MultiSet(Dataset):
     label = torch.tensor(self.classes.index(clazz))
     if self._ctx_skip_imread:
       return None, label
-    transform = [*TRANSFORM]
+    transforms = [*TRANSFORMS]
     if not self._ctx_skip_augment:
-      transform.extend(augment(clazz))
+      transforms.extend(augment(clazz))
     # imshow augmentation
     #if clazz == 'mine':
     #  import matplotlib.pyplot as plt
     #  import numpy as np
     #  from time import sleep
-    #  x = transform(self._imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
+    #  x = transforms(self._imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
     #  plt.imshow(x.permute((1,2,0)))
     #  plt.show()
     #  sleep(.5)
     img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
-    return transform(img), label
+    return T.Compose(transforms)(img), label
 
   @contextmanager
   def skip_imread(self, *args, **kwargs):
@@ -147,5 +146,5 @@ def counts(ds, transl=False):
 
 
 def transform(x):
-  return T.Compose(TRANSFORM)(x)
+  return T.Compose(TRANSFORMS)(x)
 
