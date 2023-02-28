@@ -54,7 +54,7 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train):
   dl = dl_train if train else dl_test
 
   losses, accs = [], []
-  losses_val, accs_val = [], []
+  losses_test, accs_test = [], []
   losses_pc, accs_pc = [], []
   running_loss, running_acc = \
     torch.tensor(0., device=device), \
@@ -119,18 +119,18 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train):
         with torch.no_grad():
           with dl_test.dataset.dataset.skip_augment():
             testres = _do(net, dl_train, dl_test, loss_fn, None, False)
-          losses_val.append(sum(testres[0])/len(testres[0]))
-          accs_val.append(sum(testres[1])/len(testres[1]))
+          losses_test.append(sum(testres[0])/len(testres[0]))
+          accs_test.append(sum(testres[1])/len(testres[1]))
           losses_pc.append(sum(testres[2])/len(testres[2]))
           accs_pc.append(sum(testres[3])/len(testres[3]))
         progr.set_postfix(
             loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
-            val_loss=f"{losses_val[-1]:.4f}", val_acc=f"{accs_val[-1]:.2f}")
+            test_loss=f"{losses_test[-1]:.4f}", test_acc=f"{accs_test[-1]:.2f}")
       else:
         progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
 
   if train:
-    return (losses, accs), (losses_val, accs_val), (losses_pc, accs_pc)
+    return (losses, accs), (losses_test, accs_test), (losses_pc, accs_pc)
   else:
     return losses, accs, losses_pc, accs_pc
 
