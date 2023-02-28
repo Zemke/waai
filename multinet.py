@@ -116,6 +116,7 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train):
           torch.zeros(net.num_classes, device=device), \
           torch.zeros(net.num_classes, device=device)
       if train:
+        # TODO do not augment for test data (dataset skip_augment)
         with torch.no_grad():
           testres = _do(net, dl_train, dl_test, loss_fn, None, False)
           losses_val.append(sum(testres[0])/len(testres[0]))
