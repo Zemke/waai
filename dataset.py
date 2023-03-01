@@ -244,14 +244,13 @@ if __name__ == "__main__":
   from torchvision.utils import make_grid
   import torchvision.transforms.functional as F
 
-  skip_norm = '--skip-normalize' in sys.argv
+  norm = '--normalize' in sys.argv
   ds = MultiSet(clazzes := classes())
-  print('skip normalize:', skip_norm)
   print(counts(ds, transl=True))
   shuffle(indices := list(range(len(ds))))
   cnt = 1
   for idx in indices:
-    with ds.skip_normalize(skip_norm):
+    with ds.skip_normalize(not norm):
       x,l = ds[idx]
     if (clazz := clazzes[l]) in MAPS:
       continue
