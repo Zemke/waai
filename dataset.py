@@ -39,49 +39,50 @@ if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
 
 AUG = {
   "water": [
-    T.RandomResizedCrop((H, W)),
+    T.RandomResizedCrop((H, W), ratio=(2.,2.)),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
   ],
   "text": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
   ],
   "cloud": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
   ],
   "girder": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
   ],
   "barrel": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
   ],
   "blood": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=180, translate=(.1,.1)),
   ],
   "bg": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=0, translate=(.1,.1)),
   ],
   "mine": [
-    T.RandomAffine(degrees=180, translate=(.2,.2)),
+    T.RandomAffine(degrees=180, translate=(.1,.1)),
     T.RandomHorizontalFlip(p=.5),
   ],
   "worm": [
-    T.RandomAffine(degrees=20, translate=(.2,.2)),
+    T.RandomAffine(degrees=15, translate=(.2,.2)),
     T.RandomHorizontalFlip(p=.5),
   ],
   "dynamite": [
@@ -91,13 +92,12 @@ AUG = {
   "puffs": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomRotation(180),
   ],
   "sheep": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
-    T.RandomResizedCrop((H, W)),
+    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
   ],
 }
 
