@@ -196,17 +196,19 @@ def splitset(ds):
 
 def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
   bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
-  if bs != len(dataset):
-    print('batch size is', bs)
+  opts = {"batch_size": bs}
+  if len(dataset) != bs:
+    opts.update({"num_workers": 4, "persistent_workers": True})
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
     cnt = 1 / torch.tensor(counts(dataset))
     weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
-    return DataLoader(dataset, batch_size=bs, sampler=sampler)
+    opts["sampler"] = sampler
   else:
-    return DataLoader(dataset, batch_size=bs, shuffle=shuffle)
+    opts["shuffle"] = shuffle
+  return DataLoader(dataset, **opts)
 
 
 def classes(weapon=None):
