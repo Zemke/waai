@@ -140,6 +140,7 @@ class MultiSet(Dataset):
     self.dataset = self
     self._ctx_skip_imread = False
     self._ctx_skip_augment = False
+    self._ctx_skip_normalize = False
 
     assert isinstance(classes, list)
     self.classes = classes
@@ -150,6 +151,20 @@ class MultiSet(Dataset):
     #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
     self.df = df[df["class"].isin(self.classes)]
 
+  def compose_transform(self, clazz):
+    transforms = [*TRANSFORMS]
+    if not self._ctx_skip_augment:
+      transforms.extend(augment(clazz))
+    if self._ctx_skip_normalize:
+      while 1:
+        for i in range(len(transforms)):
+          if isinstance(transforms[i], T.Normalize):
+            del transforms[i]
+            break
+        else:
+          break
+    return T.Compose(transforms)
+
   def __len__(self):
     return len(self.df)
 
@@ -158,36 +173,28 @@ class MultiSet(Dataset):
     label = torch.tensor(self.classes.index(clazz))
     if self._ctx_skip_imread:
       return None, label
-    transforms = [*TRANSFORMS]
-    if not self._ctx_skip_augment:
-      transforms.extend(augment(clazz))
-    # imshow augmentation
-    #if clazz == 'mine':
-    #  import matplotlib.pyplot as plt
-    #  import numpy as np
-    #  from time import sleep
-    #  x = transforms(self._imread(idx)) * self.std[:, None, None] + self.mean[:, None, None]
-    #  plt.imshow(x.permute((1,2,0)))
-    #  plt.show()
-    #  sleep(.5)
     img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
-    return T.Compose(transforms)(img), label
+    return self.compose_transform(clazz)(img), label
 
   @contextmanager
-  def skip_imread(self, *args, **kwargs):
-    return self._skip_anything('imread')
+  def skip_imread(self, do=True):
+    return self._skip_anything('imread', do)
 
   @contextmanager
-  def skip_augment(self, *args, **kwargs):
-    return self._skip_anything('augment')
+  def skip_augment(self, do=True):
+    return self._skip_anything('augment', do)
 
-  def _skip_anything(self, anything):
+  @contextmanager
+  def skip_normalize(self, do=True):
+    return self._skip_anything('normalize', do)
+
+  def _skip_anything(self, anything, do):
     attr = "_ctx_skip_" + anything
     try:
-      setattr(self, attr, True)
+      setattr(self, attr, do)
       yield self
     finally:
-      setattr(self, attr, False)
+      setattr(self, attr, not do)
 
 
 def splitset(ds):
@@ -228,4 +235,33 @@ def counts(ds, transl=False):
 
 def transform(x):
   return T.Compose(TRANSFORMS)(x)
+
+
+if __name__ == "__main__":
+  import matplotlib.pyplot as plt
+  import numpy as np
+  from random import shuffle
+  from torchvision.utils import make_grid
+  import torchvision.transforms.functional as F
+
+  skip_norm = '--skip-normalize' in sys.argv
+  ds = MultiSet(clazzes := classes())
+  print('skip normalize:', skip_norm)
+  print(counts(ds, transl=True))
+  shuffle(indices := list(range(len(ds))))
+  cnt = 1
+  for idx in indices:
+    with ds.skip_normalize(skip_norm):
+      x,l = ds[idx]
+    if (clazz := clazzes[l]) in MAPS:
+      continue
+    path = os.path.join(ds.img_dir, ds.df.iloc[idx]["file"])
+    with ds.skip_normalize(), ds.skip_augment():
+      orig = ds.compose_transform(clazz)(read_image(path, ImageReadMode.RGB))
+    plt.title(clazz)
+    plt.imshow(F.to_pil_image(make_grid([x.detach().cpu(), orig])))
+    plt.show()
+    if cnt % 20 == 0 and input('enter "stop" to stop: ') == 'stop':
+      break
+    cnt += 1
 

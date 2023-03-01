@@ -22,33 +22,23 @@ if __name__ == "__main__":
 
   import dataset
   ds = dataset.splitset(dataset.MultiSet(classes := dataset.classes(os.getenv("WEAPON", None))))[0]
+  while ds.skip_normalize():
+    dl = dataset.load(ds, classes, batch_size=len(ds), weighted=True)
+    assert len(dl) == 1
+    d = next(iter(dl))[0]
+    assert d.shape == (len(ds), 3, dataset.H, dataset.W)
 
-  # remove all existing normalization
-  tt = ds.dataset.transform.transforms
-  while 1:
-    for i in range(len(tt)):
-      if isinstance(tt[i], Normalize):
-        del tt[i]
-        break
-    else:
-      break
+    def norm(dd):
+      return torch.std_mean(torch.stack([Normalize(std=std, mean=mean)(d) for d in dd]), (0,2,3))
 
-  dl = dataset.load(ds, classes, batch_size=len(ds), weighted=True)
-  assert len(dl) == 1
-  d = next(iter(dl))[0]
-  assert d.shape == (len(ds), 3, dataset.H, dataset.W)
-
-  def norm(dd):
-    return torch.std_mean(torch.stack([Normalize(std=std, mean=mean)(d) for d in dd]), (0,2,3))
-
-  print('shape of data X, C, H, W:', d.shape)
-  std, mean = torch.std_mean(d, (0,2,3))
-  print()
-  print("std, mean of data")
-  print("max precision:", std, mean)
-  print("    formatted:", *tuple(tuple(round(y, 3) for y in x.round(decimals=3).tolist()) for x in [std, mean]))
-  print()
-  print("data is weighted and online augmented therefore differs with each epoch")
-  print("applied on same data:", norm(d))
-  print(" applied on new data:", norm(next(iter(dl))[0]))
+    print('shape of data X, C, H, W:', d.shape)
+    std, mean = torch.std_mean(d, (0,2,3))
+    print()
+    print("std, mean of data")
+    print("max precision:", std, mean)
+    print("    formatted:", *tuple(tuple(round(y, 3) for y in x.round(decimals=3).tolist()) for x in [std, mean]))
+    print()
+    print("data is weighted and online augmented therefore differs with each epoch")
+    print("applied on same data:", norm(d))
+    print(" applied on new data:", norm(next(iter(dl))[0]))
 
