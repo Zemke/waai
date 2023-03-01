@@ -104,7 +104,7 @@ AUG = {
 for k in AUG.keys():
   if k not in CLASSES: print("augmentation for non-existing class", k)
 
-AUG_MAP = [T.RandomHorizontalFlip(p=.5),]
+AUG_MAP = [T.RandomHorizontalFlip(p=.4),]
 
 
 def augment(clazz):
