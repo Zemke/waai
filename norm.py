@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
   import dataset
   ds = dataset.splitset(dataset.MultiSet(classes := dataset.classes(os.getenv("WEAPON", None))))[0]
-  while ds.skip_normalize():
+  with ds.dataset.skip_normalize():
     dl = dataset.load(ds, classes, batch_size=len(ds), weighted=True)
     assert len(dl) == 1
     d = next(iter(dl))[0]
