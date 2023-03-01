@@ -210,7 +210,8 @@ def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
     cnt = 1 / torch.tensor(counts(dataset))
-    weights = [cnt[v] for _,v in dataset]
+    with ds.dataset.skip_imread():
+      weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     opts["sampler"] = sampler
   else:
