@@ -53,10 +53,7 @@ class Runner:
     for i in (progr := trange(len(paths))):
       f = paths[i].split('/')[-1][:-4]
       progr.set_postfix(f=f)
-      dl = dataset.load(
-        ds := dataset.CaptureMultiSet(paths[i]),
-        batch_size=len(ds),
-        shuffle=False)
+      dl = dataset.load(ds := dataset.CaptureMultiSet(paths[i]), batch_size=len(ds))
       preds = multinet.pred_capture(self.net, dl)
       mx = preds.argmax(1)
       for i in range(len(ds.tiles)):

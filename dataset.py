@@ -7,7 +7,7 @@ from contextlib import contextmanager
 
 import torch
 from torch.utils.data import \
-    Dataset, DataLoader, random_split, Subset, WeightedRandomSampler
+    Dataset, DataLoader, random_split, Subset, WeightedRandomSampler, default_collate
 from torchvision.io import read_image, ImageReadMode
 import torchvision.transforms as T
 
@@ -174,7 +174,7 @@ class MultiSet(Dataset):
     if self._ctx_skip_imread:
       return None, label
     img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
-    return self.compose_transform(clazz)(img), label
+    return self.compose_transform(clazz)(img), label, file
 
   @contextmanager
   def skip_imread(self, do=True):
@@ -196,15 +196,21 @@ class MultiSet(Dataset):
     finally:
       setattr(self, attr, not do)
 
+  @staticmethod
+  def collate_fn(batch):
+    return default_collate(tuple(batch[:2]))
+
 
 def splitset(ds):
   return random_split(ds, (.8, .2), torch.Generator().manual_seed(42))
 
 
-def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
-  bs = int(os.getenv('BATCH', 8)) if batch_size is None else batch_size
-  opts = {"batch_size": bs}
-  if len(dataset) != bs:
+def load(dataset, classes=None, weighted=False, **opts):
+  if "batch_size" not in opts:
+    opts["batch_size"] = int(os.getenv('BATCH', 8))
+  if "collate_fn" not in opts:
+    opts["collate_fn"] = MultiSet.collate_fn
+  if "num_workers" not in opts and len(dataset) != bs:
     opts.update({"num_workers": 4, "persistent_workers": True})
   if weighted:
     if classes is None:
@@ -214,8 +220,7 @@ def load(dataset, classes=None, batch_size=None, weighted=False, shuffle=True):
       weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     opts["sampler"] = sampler
-  else:
-    opts["shuffle"] = shuffle
+  print(opts)
   return DataLoader(dataset, **opts)
 
 
@@ -241,27 +246,25 @@ def transform(x):
 if __name__ == "__main__":
   import matplotlib.pyplot as plt
   import numpy as np
-  from random import shuffle
   from torchvision.utils import make_grid
   import torchvision.transforms.functional as F
 
   norm = '--normalize' in sys.argv
-  ds = MultiSet(clazzes := classes())
+  ds = MultiSet(clazzes := sorted(set(classes()) - MAPS  - {'bg'}))
   print(counts(ds, transl=True))
-  shuffle(indices := list(range(len(ds))))
-  cnt = 1
-  for idx in indices:
-    with ds.skip_normalize(not norm):
-      x,l = ds[idx]
-    if (clazz := clazzes[l]) in MAPS:
-      continue
-    path = os.path.join(ds.img_dir, ds.df.iloc[idx]["file"])
-    with ds.skip_normalize(), ds.skip_augment():
-      orig = ds.compose_transform(clazz)(read_image(path, ImageReadMode.RGB))
-    plt.title(clazz)
-    plt.imshow(F.to_pil_image(make_grid([x.detach().cpu(), orig])))
-    plt.show()
-    if cnt % 20 == 0 and input('enter "stop" to stop: ') == 'stop':
-      break
-    cnt += 1
+  BS = 256
+  dl = load(ds, clazzes, weighted=True,
+            batch_size=BS, num_workers=0,
+            collate_fn=default_collate)
+  with ds.skip_normalize(not norm):
+    x, l, f = next(iter(dl))
+    with ds.skip_augment():
+      o = torch.stack([ds.compose_transform(clazzes[l[i]])(read_image(os.path.join(ds.img_dir, f[i]), ImageReadMode.RGB)) for i in range(len(f))])
+  s = torch.cat((x,o),-1)
+  plt.figure(figsize=(14,8))
+  plt.xticks([])
+  plt.yticks([])
+  plt.tight_layout()
+  plt.imshow(F.to_pil_image(make_grid(s, padding=8, nrow=BS//16, pad_value=1.)))
+  plt.show()
 
