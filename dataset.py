@@ -264,8 +264,9 @@ if __name__ == "__main__":
             collate_fn=default_collate)
   with ds.skip_normalize(not norm):
     x, l, f = next(iter(dl))
+    [print(f[i], l[i]) for i in range(BS)]
     with ds.skip_augment():
-      o = torch.stack([ds.compose_transform(clazzes[l[i]])(read_image(os.path.join(ds.img_dir, f[i]), ImageReadMode.RGB)) for i in range(len(f))])
+      o = torch.stack([ds.compose_transform(clazzes[l[i]])(read_image(os.path.join(ds.img_dir, f[i]), ImageReadMode.RGB)) for i in range(BS)])
   s = torch.cat((x,o),-1)
   plt.figure(figsize=(14,8))
   plt.xticks([])
