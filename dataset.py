@@ -250,7 +250,13 @@ if __name__ == "__main__":
   import torchvision.transforms.functional as F
 
   norm = '--normalize' in sys.argv
-  ds = MultiSet(clazzes := sorted(set(classes()) - MAPS  - {'bg'}))
+  for v in sys.argv:
+    if v in CLASSES:
+      clazzes = [v]
+      break
+  else:
+    clazzes = sorted(set(classes()) - MAPS  - {'bg'})
+  ds = MultiSet(clazzes)
   print(counts(ds, transl=True))
   BS = 256
   dl = load(ds, clazzes, weighted=True,
