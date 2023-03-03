@@ -211,13 +211,13 @@ def load(dataset, classes=None, weighted=False, **opts):
     opts["batch_size"] = int(os.getenv('BATCH', 8))
   if "collate_fn" not in opts:
     opts["collate_fn"] = MultiSet.collate_fn
-  if "num_workers" not in opts and len(dataset) != bs:
+  if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
     opts.update({"num_workers": 4, "persistent_workers": True})
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
     cnt = 1 / torch.tensor(counts(dataset))
-    with ds.dataset.skip_imread():
+    with dataset.dataset.skip_imread():
       weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     opts["sampler"] = sampler

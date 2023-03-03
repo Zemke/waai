@@ -10,7 +10,7 @@ from tqdm import trange, tqdm
 import numpy as np
 
 
-STEP = 5
+STEP = 4
 EPOCHS = int(os.getenv("EPOCHS", 20))
 
 device = torch.device(
