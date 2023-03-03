@@ -220,7 +220,6 @@ def load(dataset, classes=None, weighted=False, **opts):
       weights = [cnt[v] for _,v in dataset]
     sampler = WeightedRandomSampler(weights, len(dataset))
     opts["sampler"] = sampler
-  print(opts)
   return DataLoader(dataset, **opts)
 
 
