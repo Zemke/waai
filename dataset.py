@@ -213,6 +213,8 @@ def load(dataset, classes=None, weighted=False, **opts):
     opts["collate_fn"] = MultiSet.collate_fn
   if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
     opts.update({"num_workers": 4, "persistent_workers": True})
+  if "pin_memory" not in opts and os.getenv("GPU") == '1':
+    opts["pin_memory"] = True
   if weighted:
     if classes is None:
       raise Exception("classes must not be None for weighted sampling")
