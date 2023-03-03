@@ -10,6 +10,7 @@ from torch.utils.data import \
     Dataset, DataLoader, random_split, Subset, WeightedRandomSampler, default_collate
 from torchvision.io import read_image, ImageReadMode
 import torchvision.transforms as T
+from torchvision.transforms import InterpolationMode
 
 from PIL import Image
 import pandas as pd
@@ -53,7 +54,7 @@ AUG = {
     T.RandomVerticalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
     T.RandomAffine(degrees=0, translate=(.3,.3)),
-    T.RandomRotation(180),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
   ],
   "barrel": [
     T.ColorJitter(brightness=(1.,3.)),
@@ -65,39 +66,39 @@ AUG = {
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
     T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.4,.4)),
+    T.RandomAffine(degrees=180, translate=(.4,.4), interpolation=InterpolationMode.BILINEAR),
   ],
   "bg": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
     T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.4,.4)),
+    T.RandomAffine(degrees=180, translate=(.4,.4), interpolation=InterpolationMode.BILINEAR),
   ],
   "mine": [
-    T.RandomAffine(degrees=180, translate=(.2,.2)),
+    T.RandomAffine(degrees=180, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.5, 1.)),
   ],
   "worm": [
-    T.RandomAffine(degrees=15, translate=(.2,.2)),
+    T.RandomAffine(degrees=15, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
     T.RandomHorizontalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.3, 1.)),
   ],
   "dynamite": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.1,.25)),
+    T.RandomAffine(degrees=0, translate=(.1,.25), interpolation=InterpolationMode.BILINEAR),
     T.RandomResizedCrop((H, W), scale=(.5,1.), ratio=(.3,2.)),
   ],
   "puffs": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.6, 1.)),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomAffine(degrees=0, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
   ],
   "sheep": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.3, 1.)),
-    T.RandomAffine(degrees=0, translate=(.3,.3)),
+    T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
   ],
 }
 
