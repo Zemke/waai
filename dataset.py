@@ -199,7 +199,7 @@ class MultiSet(Dataset):
 
   @staticmethod
   def collate_fn(batch):
-    return default_collate(tuple(batch[:2]))
+    return default_collate([(x,l) for x,l,_ in batch])
 
 
 def splitset(ds):
