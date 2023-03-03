@@ -30,7 +30,7 @@ TRANSFORMS = [
 # all future weapons: "dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"
 WEAPONS = {"dynamite", "sheep"}
 # TODO atm there's no diff btw girder part of map and user-deployed girder
-ALWAYS = {'bg', 'blood', 'barrel', 'text', 'water', 'cloud', 'girder', 'worm', 'mine', 'puffs'}
+ALWAYS = {'bg', 'blood', 'barrel', 'cloud', 'girder', 'worm', 'mine', 'puffs', 'water'}
 MAPS = {'-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban'}
 CLASSES = WEAPONS | ALWAYS | MAPS
 
@@ -39,65 +39,65 @@ if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
 
 AUG = {
   "water": [
-    T.RandomResizedCrop((H, W), ratio=(2.,2.)),
+    T.RandomResizedCrop((H, W), scale=(.8,1.)),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
-  ],
-  "text": [
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
+    T.RandomAffine(degrees=0, translate=(.3,.3)),
   ],
   "cloud": [
+    T.RandomResizedCrop((H, W), scale=(.8,1.), ratio=(3,3.)),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
+    T.RandomAffine(degrees=0, translate=(.3,.3)),
   ],
   "girder": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
+    T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
+    T.RandomAffine(degrees=0, translate=(.3,.3)),
+    T.RandomRotation(180),
   ],
   "barrel": [
+    T.ColorJitter(brightness=(1.,3.)),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
   ],
   "blood": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomAffine(degrees=180, translate=(.1,.1)),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=180, translate=(.4,.4)),
   ],
   "bg": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomAffine(degrees=0, translate=(.1,.1)),
+    T.RandomResizedCrop((H, W)),
+    T.RandomAffine(degrees=180, translate=(.4,.4)),
   ],
   "mine": [
-    T.RandomAffine(degrees=180, translate=(.1,.1)),
+    T.RandomAffine(degrees=180, translate=(.2,.2)),
     T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomResizedCrop((H, W), scale=(.5, 1.)),
   ],
   "worm": [
     T.RandomAffine(degrees=15, translate=(.2,.2)),
     T.RandomHorizontalFlip(p=.5),
+    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
   ],
   "dynamite": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
+    T.RandomAffine(degrees=0, translate=(.1,.25)),
+    T.RandomResizedCrop((H, W), scale=(.5,1.), ratio=(.3,2.)),
   ],
   "puffs": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
-    T.RandomRotation(180),
+    T.RandomResizedCrop((H, W), scale=(.6, 1.)),
+    T.RandomAffine(degrees=0, translate=(.2,.2)),
   ],
   "sheep": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), ratio=(1.,1.)),
+    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+    T.RandomAffine(degrees=0, translate=(.3,.3)),
   ],
 }
 
