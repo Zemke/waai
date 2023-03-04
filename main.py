@@ -64,7 +64,6 @@ class Runner:
           ds.tiles[i],
           target_dir,
           f"{self.classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
-      exit()
 
   @staticmethod
   def help():
