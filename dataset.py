@@ -112,7 +112,7 @@ def augment(clazz):
   if clazz in MAPS:
     return AUG_MAP
   if clazz in AUG:
-    return AUG[clazz]
+    return [T.RandomApply(AUG[clazz], p=.5)]
   print("no augmentation for", clazz, file=sys.stderr)
   return []
 
