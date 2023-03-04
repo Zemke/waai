@@ -119,6 +119,7 @@ def augment(clazz):
 
 class CaptureMultiSet(Dataset):
   def __init__(self, path):
+    self.dataset = self
     img = visual.load(path)
     div,mod = divmod(W, 3)
     if mod > 0:
