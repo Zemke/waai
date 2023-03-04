@@ -33,16 +33,17 @@ def tile(img, kernel=25, stride=2):
   return res
 
 
-def plt_res(trainres, testres, pcres, classes, epochs):
-  with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
-    pickle.dump(
-      dict(
-        trainres=trainres,
-        testres=testres,
-        pcres=pcres,
-        classes=classes,
-        epochs=epochs),
-      f)
+def plt_res(trainres, testres, pcres, classes, epochs, save=True):
+  if save:
+    with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
+      pickle.dump(
+        dict(
+          trainres=trainres,
+          testres=testres,
+          pcres=pcres,
+          classes=classes,
+          epochs=epochs),
+        f)
 
   trainloss, trainacc = trainres
   testloss, testacc = testres
@@ -143,7 +144,7 @@ def write_img(img, path, name):
 def deserialize(p='metrics.pkl'):
   with open(p, 'rb') as f:
     X = pickle.load(f)
-  plt_res(**X)
+  plt_res(**X, save=False)
 
 
 if __name__ == "__main__":
