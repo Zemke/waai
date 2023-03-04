@@ -134,7 +134,7 @@ def _do(net, dl_train, dl_test, loss_fn, optim, train):
 
 
 def train(net, dl_train, dl_test):
-  optim = torch.optim.Adam(net.parameters(), lr=1e-3)
+  optim = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
   loss_fn = nn.CrossEntropyLoss(reduction='none')
 
   mn_loss = torch.inf
