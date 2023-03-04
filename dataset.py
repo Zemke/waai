@@ -210,7 +210,7 @@ def splitset(ds):
 def load(dataset, classes=None, weighted=False, **opts):
   if "batch_size" not in opts:
     opts["batch_size"] = int(os.getenv('BATCH', 8))
-  if "collate_fn" not in opts:
+  if "collate_fn" not in opts and isinstance(dataset.dataset, MultiSet):
     opts["collate_fn"] = MultiSet.collate_fn
   if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
     opts.update({"num_workers": 4, "persistent_workers": True})
