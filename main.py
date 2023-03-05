@@ -122,8 +122,10 @@ if __name__ == "__main__":
     ds_train, ds_test = dataset.splitset(data)
     print('train data', dataset.counts(ds_train, transl=True))
     print('test data', dataset.counts(ds_test, transl=True))
-    dl_train = dataset.load(ds_train, runner.classes, weighted=True)
-    dl_test = dataset.load(ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
+    dl_train = dataset.MultiSet.load(
+      ds_train, runner.classes, weighted=True)
+    dl_test = dataset.MultiSet.load(
+      ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
     trainres, testres, pcres = runner.train(dl_train, dl_test)
     visual.plt_res(trainres, testres, pcres, data.classes, runner.epochs)
     exit()

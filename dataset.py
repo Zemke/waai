@@ -196,29 +196,31 @@ class MultiSet(Dataset):
   def collate_fn(batch):
     return default_collate([(x,l) for x,l,_ in batch])
 
+  @staticmethod
+  def load(dataset, classes=None, weighted=False, **opts):
+    if not isinstance(dataset.dataset, MultiSet):
+      raise Exception("load is only for MultiSet or Subset of it")
+    if "batch_size" not in opts:
+      opts["batch_size"] = int(os.getenv('BATCH', 8))
+    if "collate_fn" not in opts and isinstance(dataset.dataset, MultiSet):
+      opts["collate_fn"] = MultiSet.collate_fn
+    if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
+      opts.update({"num_workers": 4, "persistent_workers": True})
+    if "pin_memory" not in opts and os.getenv("GPU") == '1':
+      opts["pin_memory"] = True
+    if weighted:
+      if classes is None:
+        raise Exception("classes must not be None for weighted sampling")
+      cnt = 1 / torch.tensor(counts(dataset))
+      with dataset.dataset.skip_imread():
+        weights = [cnt[v] for _,v in dataset]
+      sampler = WeightedRandomSampler(weights, len(dataset))
+      opts["sampler"] = sampler
+    return DataLoader(dataset, **opts)
+
 
 def splitset(ds):
   return random_split(ds, (.8, .2), torch.Generator().manual_seed(42))
-
-
-def load(dataset, classes=None, weighted=False, **opts):
-  if "batch_size" not in opts:
-    opts["batch_size"] = int(os.getenv('BATCH', 8))
-  if "collate_fn" not in opts and isinstance(dataset.dataset, MultiSet):
-    opts["collate_fn"] = MultiSet.collate_fn
-  if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
-    opts.update({"num_workers": 4, "persistent_workers": True})
-  if "pin_memory" not in opts and os.getenv("GPU") == '1':
-    opts["pin_memory"] = True
-  if weighted:
-    if classes is None:
-      raise Exception("classes must not be None for weighted sampling")
-    cnt = 1 / torch.tensor(counts(dataset))
-    with dataset.dataset.skip_imread():
-      weights = [cnt[v] for _,v in dataset]
-    sampler = WeightedRandomSampler(weights, len(dataset))
-    opts["sampler"] = sampler
-  return DataLoader(dataset, **opts)
 
 
 def classes(weapon=None):
