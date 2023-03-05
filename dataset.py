@@ -284,9 +284,9 @@ if __name__ == "__main__":
   ds = MultiSet(clazzes)
   print(counts(ds, transl=True))
   BS = 256
-  dl = load(ds, clazzes, weighted=True,
-            batch_size=BS, num_workers=0,
-            collate_fn=default_collate)
+  dl = MultiSet.load(ds, clazzes, weighted=True,
+                     batch_size=BS, num_workers=0,
+                     collate_fn=default_collate)
   with ds.skip_normalize(not norm):
     x, l, f = next(iter(dl))
     [print(f[i], l[i]) for i in range(BS)]
