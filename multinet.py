@@ -161,11 +161,9 @@ def train(net, dl_train, dl_test):
 
 
 @torch.no_grad()
-def pred_capture(net, dl):
-  assert len(dl) == 1
-  b = next(iter(dl))
+def pred_capture(net, tiles):
   net.eval()
-  return F.softmax(net(b.to(device)), dim=1).cpu().numpy()
+  return F.softmax(net(tiles.to(device)), dim=1).numpy(force=True)
 
 
 @torch.no_grad()

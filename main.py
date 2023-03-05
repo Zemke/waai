@@ -6,12 +6,11 @@ import select
 from time import time
 import math
 
-from tqdm import trange
-
 import multinet
 import dataset
 import visual
 
+from tqdm import tqdm
 import numpy as np
 
 
@@ -46,24 +45,23 @@ class Runner:
     # TODO output per class probability
     return self.classes[argmax], y[argmax]
 
-  def pred_capture(self, paths, target_dir):
+  def pred_capture(self, source_dir, target_dir):
     thres = float(os.getenv('THRES', .8))
     print(f'output threshold >={thres*100}% per tile')
-
-    for i in (progr := trange(len(paths))):
-      f = paths[i].split('/')[-1][:-4]
+    dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
+    for i, (tiles, origs) in (progr := tqdm(enumerate(dl))):
+      f = ds.imgs[i].split('/')[-1][:-4]
       progr.set_postfix(f=f)
-      dl = dataset.load(ds := dataset.CaptureMultiSet(paths[i]), batch_size=len(ds))
-      preds = multinet.pred_capture(self.net, dl)
+      preds = multinet.pred_capture(self.net, tiles)
       mx = preds.argmax(1)
-      for i in range(len(ds.tiles)):
-        prob = preds[i][mx[i]]
+      for k in range(len(tiles)):
+        prob = preds[k][mx[k]]
         if prob < thres:
           continue
         visual.write_img(
-          ds.tiles[i],
+          origs[k],
           target_dir,
-          f"{self.classes[mx[i]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+          f"{self.classes[mx[k]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
 
   @staticmethod
   def help():
@@ -103,15 +101,7 @@ if __name__ == "__main__":
         exit()
     elif len(sys.argv) == 4:
       # predicting tiled captures
-      src_dir, target_dir = sys.argv[2], sys.argv[3]
-      imgs = []
-      with os.scandir(src_dir) as it:
-        for entry in it:
-          if entry.is_file() and entry.name.lower().endswith('.png'):
-            imgs.append(entry.path)
-      if not os.path.isdir(target_dir):
-        raise Exception(f"{target_dir} not found")
-      print(runner.pred_capture(imgs, target_dir))
+      print(runner.pred_capture(sys.argv[2], sys.argv[3]))
       exit()
 
   # train new model

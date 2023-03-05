@@ -111,21 +111,47 @@ def augment(clazz):
   return []
 
 
-class CaptureMultiSet(Dataset):
-  def __init__(self, path):
-    self.dataset = self
-    img = visual.load(path)
-    div,mod = divmod(W, 3)
-    if mod > 0:
+class CaptureSet(Dataset):
+  transform = T.Compose(TRANSFORMS)
+
+  def __init__(self, source_dir, target_dir):
+    self.div, self.mod = divmod(W, 3)
+    if self.mod > 0:
       print(f"tiling missing last {mod} pixels on the right of each tile")
-    self.tiles = visual.tile(img, kernel=H, stride=div)
-    self.transform = T.Compose(TRANSFORMS)
+
+    imgs = []
+    with os.scandir(source_dir) as it:
+      for entry in it:
+        if entry.is_file() and entry.name.lower().endswith('.png'):
+          imgs.append(entry.path)
+    if not os.path.isdir(target_dir):
+      print(f"{target_dir} not found", file=sys.stderr)
+      exit(4)
+    self.imgs = imgs
 
   def __len__(self):
-    return len(self.tiles)
+    return len(self.imgs)
 
   def __getitem__(self, idx):
-    return self.transform(self.tiles[idx])
+    capture = visual.load(self.imgs[idx])
+    tiles = visual.tile(capture, kernel=W, stride=self.div)
+    orig, trans = zip(*[(t, self.transform(t)) for t in tiles])
+    return torch.stack(trans), orig
+
+  @staticmethod
+  def load(dataset):
+    assert isinstance(dataset, CaptureSet)
+    return DataLoader(
+      dataset,
+      batch_size=None,
+      batch_sampler=None,
+      collate_fn=CaptureSet._collate_fn,
+      num_workers=4,
+      persistent_workers=True)
+
+  @staticmethod
+  def _collate_fn(b):
+    return b
 
 
 class MultiSet(Dataset):
