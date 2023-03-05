@@ -49,7 +49,7 @@ class Runner:
     thres = float(os.getenv('THRES', .8))
     print(f'output threshold >={thres*100}% per tile')
     dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
-    for i, (tiles, origs) in (progr := tqdm(enumerate(dl))):
+    for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
       f = ds.imgs[i].split('/')[-1][:-4]
       progr.set_postfix(f=f)
       preds = multinet.pred_capture(self.net, tiles)
