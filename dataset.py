@@ -31,7 +31,7 @@ TRANSFORMS = [
 # all future weapons: "dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"
 WEAPONS = {"dynamite", "sheep"}
 # TODO atm there's no diff btw girder part of map and user-deployed girder
-ALWAYS = {'bg', 'blood', 'barrel', 'cloud', 'girder', 'worm', 'mine', 'puffs', 'water'}
+ALWAYS = {'bg', 'barrel', 'cloud', 'girder', 'worm', 'mine', 'puffs', 'water'}
 MAPS = {'-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban'}
 CLASSES = WEAPONS | ALWAYS | MAPS
 
@@ -61,12 +61,6 @@ AUG = {
     T.RandomHorizontalFlip(p=.5),
     T.RandomAffine(degrees=0, translate=(.2,.2)),
     T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
-  ],
-  "blood": [
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.4,.4), interpolation=InterpolationMode.BILINEAR),
   ],
   "bg": [
     T.RandomHorizontalFlip(p=.5),
