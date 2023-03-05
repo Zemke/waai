@@ -169,7 +169,7 @@ def pred_capture(net, tiles):
 @torch.no_grad()
 def pred(net, img):
   net.eval()
-  return F.softmax(net(img.unsqueeze(0).to(device)).squeeze(), 0)
+  return F.softmax(net(img.unsqueeze(0).to(device)).squeeze(), 0).numpy(force=True)
 
 
 def pretrained(path):

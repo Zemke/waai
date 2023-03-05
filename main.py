@@ -40,10 +40,8 @@ class Runner:
     return multinet.train(*args)
     
   def pred(self, x):
-    y = multinet.pred(net, dataset.transform(x))
-    argmax = np.argmax(y)
-    # TODO output per class probability
-    return self.classes[argmax], y[argmax]
+    y = multinet.pred(self.net, dataset.transform(x))
+    return sorted({(self.classes[i], round(y1.item()*100)) for i, y1 in enumerate(y)}, key=lambda v: v[1])
 
   def pred_capture(self, source_dir, target_dir):
     thres = float(os.getenv('THRES', .8))
