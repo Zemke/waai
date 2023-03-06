@@ -15,7 +15,9 @@ import numpy as np
 
 def _worker(q, classes, thres, target_dir):
   while 1:
-    tiles, origs, preds, f = q.get()
+    if (deq := q.get()) == "DONE":
+      break
+    tiles, origs, preds, f = deq
     mx = preds.argmax(1)
     for k in range(len(tiles)):
       prob = preds[k][mx[k]]
@@ -67,6 +69,7 @@ class Runner:
       f = ds.imgs[i].split('/')[-1][:-4]
       progr.set_postfix(f=f)
       q.put((tiles, origs, multinet.pred_capture(self.net, tiles), f))
+    q.put("DONE")
     q.join()
 
   @staticmethod
