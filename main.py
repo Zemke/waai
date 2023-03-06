@@ -23,10 +23,11 @@ def _worker(q, classes, thres, target_dir):
       prob = preds[k][mx[k]]
       if prob < thres:
         continue
+      clazz = classes[mx[k]]
       visual.write_img(
         origs[k],
-        target_dir,
-        f"{classes[mx[k]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+        os.path.join(target_dir, clazz),
+        f"{clazz}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
 
 
 class Runner:
@@ -59,11 +60,15 @@ class Runner:
     return sorted({(self.classes[i], round(y1.item()*100)) for i, y1 in enumerate(y)}, key=lambda v: v[1])
 
   def pred_capture(self, source_dir, target_dir):
-    from multiprocessing import Process, Queue
-
     thres = float(os.getenv('THRES', .8))
-    (p := Process(target=_worker, args=(q := Queue(), self.classes, thres, target_dir))).start()
     print(f'output threshold >={thres*100}% per tile')
+
+    for c in self.classes:
+      os.mkdir(os.path.join(target_dir, c))
+
+    from multiprocessing import Process, Queue
+    (p := Process(target=_worker, args=(q := Queue(), self.classes, thres, target_dir))).start()
+
     dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
     for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
       f = ds.imgs[i].split('/')[-1][:-4]
