@@ -13,6 +13,19 @@ import visual
 from tqdm import tqdm
 import numpy as np
 
+def _worker(q, classes, thres, target_dir):
+  while 1:
+    tiles, origs, preds, f = q.get()
+    mx = preds.argmax(1)
+    for k in range(len(tiles)):
+      prob = preds[k][mx[k]]
+      if prob < thres:
+        continue
+      visual.write_img(
+        origs[k],
+        target_dir,
+        f"{classes[mx[k]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+
 
 class Runner:
   weapon = os.getenv("WEAPON", None)
@@ -44,22 +57,17 @@ class Runner:
     return sorted({(self.classes[i], round(y1.item()*100)) for i, y1 in enumerate(y)}, key=lambda v: v[1])
 
   def pred_capture(self, source_dir, target_dir):
+    from multiprocessing import Process, Queue
+
     thres = float(os.getenv('THRES', .8))
+    (p := Process(target=_worker, args=(q := Queue(), self.classes, thres, target_dir))).start()
     print(f'output threshold >={thres*100}% per tile')
     dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
     for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
       f = ds.imgs[i].split('/')[-1][:-4]
       progr.set_postfix(f=f)
-      preds = multinet.pred_capture(self.net, tiles)
-      mx = preds.argmax(1)
-      for k in range(len(tiles)):
-        prob = preds[k][mx[k]]
-        if prob < thres:
-          continue
-        visual.write_img(
-          origs[k],
-          target_dir,
-          f"{self.classes[mx[k]]}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
+      q.put((tiles, origs, multinet.pred_capture(self.net, tiles), f))
+    q.join()
 
   @staticmethod
   def help():
