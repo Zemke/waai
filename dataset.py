@@ -27,28 +27,11 @@ TRANSFORMS = [
   T.ToTensor(),
   T.Normalize(std=STD, mean=MEAN),
 ]
+CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder"]
 
-# all future weapons: "dynamite", "sheep", "bat", "torch", "bungee", "cluster", "drill", "hhg", "homing", "kamikaze", "bow", "cow", "napalm", "chute", "pigeon", "rope", "tele", "strike", "skunk", "axe", "jetpack", "gravity", "select"
-WEAPONS = {"dynamite", "sheep"}
-# TODO atm there's no diff btw girder part of map and user-deployed girder
-ALWAYS = {'bg', 'barrel', 'cloud', 'girder', 'worm', 'mine', 'puffs', 'water'}
-MAPS = {'-beach', '-desert', '-farm', '-forest', '-hell', 'art', 'cheese', 'construction', 'desert', 'dungeon', 'easter', 'forest', 'fruit', 'gulf', 'hell', 'hospital', 'jungle', 'manhattan', 'medieval', 'music', 'pirate', 'snow', 'space', 'sports', 'tentacle', 'time', 'tools', 'tribal', 'urban'}
-CLASSES = WEAPONS | ALWAYS | MAPS
-
-if len(CLASSES) != sum(len(x) for x in [WEAPONS, ALWAYS, MAPS]):
-  raise Exception("There are duplicate classes.")
 
 AUG = {
-  "water": [
-    T.RandomResizedCrop((H, W), scale=(.8,1.)),
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.3,.3)),
-  ],
-  "cloud": [
-    T.RandomResizedCrop((H, W), scale=(.8,1.), ratio=(3,3.)),
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.3,.3)),
-  ],
+  "bg": [],  # TODO bg: horizontal flip? affine? resizedcrop?
   "girder": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
@@ -61,12 +44,6 @@ AUG = {
     T.RandomHorizontalFlip(p=.5),
     T.RandomAffine(degrees=0, translate=(.2,.2)),
     T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
-  ],
-  "bg": [
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W)),
-    T.RandomAffine(degrees=180, translate=(.4,.4), interpolation=InterpolationMode.BILINEAR),
   ],
   "mine": [
     T.RandomAffine(degrees=180, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
@@ -84,11 +61,6 @@ AUG = {
     T.RandomAffine(degrees=0, translate=(.1,.25), interpolation=InterpolationMode.BILINEAR),
     T.RandomResizedCrop((H, W), scale=(.5,1.), ratio=(.3,2.)),
   ],
-  "puffs": [
-    T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.6, 1.)),
-    T.RandomAffine(degrees=0, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
-  ],
   "sheep": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.3, 1.)),
@@ -99,12 +71,8 @@ AUG = {
 for k in AUG.keys():
   if k not in CLASSES: print("augmentation for non-existing class", k)
 
-AUG_MAP = [T.RandomHorizontalFlip(p=.4),]
-
 
 def augment(clazz):
-  if clazz in MAPS:
-    return AUG_MAP
   if clazz in AUG:
     return [T.RandomApply(AUG[clazz], p=.5)]
   print("no augmentation for", clazz, file=sys.stderr)
@@ -158,20 +126,19 @@ class MultiSet(Dataset):
   annot_file = './samples/annot.csv'
   img_dir = './samples'
 
-  def __init__(self, classes):
+  def __init__(self):
     self.dataset = self
     self._ctx_skip_imread = False
     self._ctx_skip_augment = False
     self._ctx_skip_normalize = False
 
-    assert isinstance(classes, list)
-    self.classes = classes
-
-    df = pd.read_csv(self.annot_file)
+    df = pd.read_csv(self.annot_file, header=None)
+    df[1] = df.iloc[:,0].str.split('/', n=1, expand=True)[0]
+    df.columns = ["file", "class"]
     if len(unkn := df[~df["class"].isin(CLASSES)]["class"].unique()):
       raise Exception(f"unknown classes in annotations file: {unkn}")
-    #df = pd.concat([df[df["class"] == c][:10] for c in self.classes])  # limit for debugging
-    self.df = df[df["class"].isin(self.classes)]
+    #df = pd.concat([df[df["class"] == c][:10] for c in CLASSES])  # limit for debugging
+    self.df = df
 
   def compose_transform(self, clazz):
     transforms = [*TRANSFORMS]
@@ -192,7 +159,7 @@ class MultiSet(Dataset):
 
   def __getitem__(self, idx):
     file, clazz = self.df.iloc[idx]
-    label = torch.tensor(self.classes.index(clazz))
+    label = torch.tensor(CLASSES.index(clazz))
     if self._ctx_skip_imread:
       return None, label
     img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
@@ -223,7 +190,7 @@ class MultiSet(Dataset):
     return default_collate([(x,l) for x,l,_ in batch])
 
   @staticmethod
-  def load(dataset, classes=None, weighted=False, **opts):
+  def load(dataset, weighted=False, **opts):
     if not isinstance(dataset.dataset, MultiSet):
       raise Exception("load is only for MultiSet or Subset of it")
     if "batch_size" not in opts:
@@ -235,8 +202,6 @@ class MultiSet(Dataset):
     if "pin_memory" not in opts and os.getenv("GPU") == '1':
       opts["pin_memory"] = True
     if weighted:
-      if classes is None:
-        raise Exception("classes must not be None for weighted sampling")
       cnt = 1 / torch.tensor(counts(dataset))
       with dataset.dataset.skip_imread():
         weights = [cnt[v] for _,v in dataset]
@@ -249,18 +214,12 @@ def splitset(ds):
   return random_split(ds, (.8, .2), torch.Generator().manual_seed(42))
 
 
-def classes(weapon=None):
-  if weapon is None:
-    return sorted(CLASSES)
-  return sorted((CLASSES - WEAPONS) | {weapon})
-
-
 def counts(ds, transl=False):
   with ds.dataset.skip_imread():
     c = Counter(l.item() for _,l in ds)
-    c.update(i for i in range(len(ds.dataset.classes)))  # there could be missing classes
+    c.update(i for i in range(len(CLASSES)))  # there could be missing classes
     if transl:
-      return {ds.dataset.classes[v]: n for v,n in c.most_common()}
+      return {CLASSES[v]: n for v,n in c.most_common()}
     return [c[i] for i in range(len(c))]
 
 
@@ -280,7 +239,7 @@ if __name__ == "__main__":
       clazzes = [v]
       break
   else:
-    clazzes = sorted(set(classes()) - MAPS  - {'bg'})
+    clazzes = CLASSES
   ds = MultiSet(clazzes)
   print(counts(ds, transl=True))
   BS = 256

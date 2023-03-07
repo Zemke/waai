@@ -13,7 +13,8 @@ import visual
 from tqdm import tqdm
 import numpy as np
 
-def _worker(q, classes, thres, target_dir):
+
+def _worker(q, thres, target_dir):
   while 1:
     if (deq := q.get()) == "DONE":
       break
@@ -23,7 +24,7 @@ def _worker(q, classes, thres, target_dir):
       prob = preds[k][mx[k]]
       if prob < thres:
         continue
-      clazz = classes[mx[k]]
+      clazz = dataset.CLASSES[mx[k]]
       visual.write_img(
         origs[k],
         os.path.join(target_dir, clazz),
@@ -31,24 +32,20 @@ def _worker(q, classes, thres, target_dir):
 
 
 class Runner:
-  weapon = os.getenv("WEAPON", None)
-
   def __init__(self):
     self.epochs = multinet.EPOCHS
-    self.classes = dataset.classes(self.weapon)
-    print("classes:", self.weapon, len(self.classes), self.classes)
   
   def pretrained(self, path):
     self.net = multinet.pretrained(path).device()
     print(f'using existing model {path}')
-    if self.net.num_classes != len(self.classes):
-      raise Exception(f"{self.net.num_classes} classes in model but {len(self.classes)} expected")
+    if self.net.num_classes != len(dataset.CLASSES):
+      raise Exception(f"{self.net.num_classes} classes in model but {len(dataset.CLASSES)} expected")
 
   def net(self):
-    self.net = multinet.MultiNet(len(self.classes)).device()
+    self.net = multinet.MultiNet(len(dataset.CLASSES)).device()
 
   def dataset(self):
-    self.ds = dataset.MultiSet(classes=self.classes)
+    self.ds = dataset.MultiSet()
     return self.ds
 
   def train(self, dl_train, dl_test):
@@ -57,17 +54,17 @@ class Runner:
     
   def pred(self, x):
     y = multinet.pred(self.net, dataset.transform(x))
-    return sorted({(self.classes[i], round(y1.item()*100)) for i, y1 in enumerate(y)}, key=lambda v: v[1])
+    return sorted({(dataset.CLASSES[i], round(y1.item()*100)) for i, y1 in enumerate(y)}, key=lambda v: v[1])
 
   def pred_capture(self, source_dir, target_dir):
     thres = float(os.getenv('THRES', .8))
     print(f'output threshold >={thres*100}% per tile')
 
-    for c in self.classes:
+    for c in dataset.CLASSES:
       os.mkdir(os.path.join(target_dir, c))
 
     from multiprocessing import Process, Queue
-    (p := Process(target=_worker, args=(q := Queue(), self.classes, thres, target_dir))).start()
+    (p := Process(target=_worker, args=(q := Queue(), thres, target_dir))).start()
 
     dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
     for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
@@ -126,12 +123,10 @@ if __name__ == "__main__":
     ds_train, ds_test = dataset.splitset(data)
     print('train data', dataset.counts(ds_train, transl=True))
     print('test data', dataset.counts(ds_test, transl=True))
-    dl_train = dataset.MultiSet.load(
-      ds_train, runner.classes, weighted=True)
-    dl_test = dataset.MultiSet.load(
-      ds_test, runner.classes, weighted=True, batch_size=len(ds_test))
+    dl_train = dataset.MultiSet.load(ds_train, weighted=True)
+    dl_test = dataset.MultiSet.load(ds_test, weighted=True, batch_size=len(ds_test))
     trainres, testres, pcres = runner.train(dl_train, dl_test)
-    visual.plt_res(trainres, testres, pcres, data.classes, runner.epochs)
+    visual.plt_res(trainres, testres, pcres, dataset.CLASSES, runner.epochs)
     exit()
 
   else:
