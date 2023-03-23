@@ -7,22 +7,20 @@ from torch import nn
 import torch.nn.functional as F
 
 from tqdm import trange, tqdm
-import numpy as np
-
-
-STEP = 4
-EPOCHS = int(os.getenv("EPOCHS", 20))
+from collections import Counter
 
 device = torch.device(
   'cuda' if torch.cuda.is_available() else
   'mps' if torch.backends.mps.is_available() else
   'cpu') if os.getenv("GPU", False) == "1" else "cpu"
+#print("device is", device)
 
 
 class MultiNet(nn.Module):
   def __init__(self, num_classes):
     super().__init__()
     self.num_classes = num_classes
+
     self.conv1 = nn.Conv2d(3, 10, 5)
     self.pool = nn.MaxPool2d(2, 2)
     self.conv2 = nn.Conv2d(10, 20, 3)
@@ -30,6 +28,8 @@ class MultiNet(nn.Module):
     self.fc2 = nn.Linear(300, 200)
     self.fc3 = nn.Linear(200, 100)
     self.fc4 = nn.Linear(100, num_classes)
+
+    self.to(device)
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.pool(F.relu(self.conv1(x)))
@@ -41,123 +41,120 @@ class MultiNet(nn.Module):
     x = self.fc4(x)
     return x
 
-  def device(self):
-    self.to(device)
-    print(f"moved net to {device}")
-    return self
+
+class Trainer:
+  lr = float(os.getenv("LR", 1e-3))
+  epochs = int(os.getenv("EPOCHS", 20))
+
+  def __init__(self, net, classes, dataloader, tester):
+    print("lr:", self.lr)
+    print("epochs:", self.epochs)
+
+    self.net = net
+    self.classes = classes
+    self.dataloader = dataloader
+    self.tester = tester
+
+    self.net = MultiNet(len(self.classes)).to(device)
+    self.optim = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+    self.loss_fn = nn.CrossEntropyLoss()
+
+  def __call__(self):
+    step = max(1, len(self.dataloader) // 10)
+
+    self.metric = {k: [] for k in ["loss", "acc", "test_loss", "test_acc", "test_acc_pc"]}
+    mn_test_loss = 9e+9
+    running_acc = torch.tensor(0., device=device)
+    running_loss = torch.tensor(0., device=device)
+    stepped = torch.tensor(0., device=device)
+
+    for epoch in range(1, self.epochs + 1):
+      self.net.train()
+
+      for i, (x, l) in (progr := tqdm(
+        enumerate(self.dataloader),
+        total=len(self.dataloader),
+        colour='yellow',
+        postfix=(pf := {}),
+      )):
+        self.optim.zero_grad()
+
+        x, l = x.to(device), l.to(device)
+
+        y = self.net(x)
+        loss = self.loss_fn(y, l)
+
+        loss.backward()
+        self.optim.step()
+
+        running_acc += (l == y.argmax(1)).sum() / l.numel()
+        running_loss += loss
+        stepped += 1
+
+        if (last_batch := i+1 == len(self.dataloader)) or (i+1) % step == 0:
+          self.metric["loss"].append((running_loss / stepped).item())
+          self.metric["acc"].append((running_acc / stepped).item())
+
+          running_acc -= running_acc
+          running_loss -= running_loss
+          stepped -= stepped
+
+          if last_batch:
+            test_metric, conf_mat = self.tester()
+            for k,v in test_metric.items():
+              self.metric[k].append(test_metric[k])
+
+            pf["test_loss"] = f"{self.metric['test_loss'][-1]:.4f}"
+            pf["test_acc"] = f"{self.metric['test_acc'][-1]:.2f}"
+            progr.set_postfix(pf)
+
+            if self.metric["test_loss"][-1] < mn_test_loss:
+              progr.colour = 'green'
+              mn_test_loss = self.metric["test_loss"][-1]
+              torch.save(self.net.state_dict(), "./model.pt")
+            else:
+              progr.colour = 'red'
+
+          pf["loss"] = f"{self.metric['loss'][-1]:.4f}"
+          pf["acc"] = f"{self.metric['acc'][-1]:.2f}"
+          progr.set_postfix(pf)
+
+    return self.metric, conf_mat
 
 
-def _do(net, dl_train, dl_test, loss_fn, optim, train):
-  net.train(train)
-  dl = dl_train if train else dl_test
+class Tester:
+  def __init__(self, net, dataset, counts):
+    self.net = net
+    self.dataset = dataset
+    self.counts = counts
+    self.weight = (reciprocal := (1 / torch.tensor(counts, device=device))) / sum(reciprocal)
+    self.loss_fn = nn.CrossEntropyLoss(self.weight)
 
-  losses, accs = [], []
-  losses_test, accs_test = [], []
-  losses_pc, accs_pc = [], []
-  running_loss, running_acc = \
-    torch.tensor(0., device=device), \
-    torch.tensor(0., device=device)
-  running_acc_pc, running_loss_pc = \
-    torch.zeros(net.num_classes, device=device), \
-    torch.zeros(net.num_classes, device=device)
-
-  progr = tqdm(dl,
-               leave=train,
-               colour='yellow' if train else 'green',
-               postfix=dict(loss="na", acc="na"))
-  step = len(dl) // STEP + 1
-  for i, (b, l) in enumerate(progr):
-    if train:
-      optim.zero_grad()
-
-    b, l = b.to(device), l.to(device)
-
-    y = net(b)
-    loss = loss_fn(y, l)
-    loss_mean = loss.mean()
-
-    if train:
-      loss_mean.backward()
-      optim.step()
-
-    running_loss += loss_mean.detach()
-    running_acc += torch.count_nonzero(y.argmax(axis=1) == l) / len(b)
-
-    if not train:
-      # TODO optim for GPU
-      for k in range(net.num_classes):
-        clazz = torch.tensor(k, device=device)
-        y_argmax = y.argmax(axis=1)
-        for_clazz = (l == clazz).bitwise_or(y_argmax == clazz)
-        running_acc_pc[k] += (y_argmax == l)[for_clazz].float().mean()
-        running_loss_pc[k] += loss[for_clazz].mean()
-
-    stepped = False
-    step_mod = (i+1) % step
-    if step_mod == 0:
-      divisor = step
-      stepped = True
-    elif len(dl) == (i+1):
-      divisor = step_mod
-      stepped = True
-
-    if stepped:
-      losses.append((running_loss / divisor).cpu())
-      accs.append((running_acc / divisor).cpu())
-      running_loss, running_acc = \
-        torch.tensor(0., device=device), \
-        torch.tensor(0., device=device)
-      if not train:
-        losses_pc.append((running_loss_pc / divisor).cpu())
-        accs_pc.append((running_acc_pc / divisor).cpu())
-        running_acc_pc, running_loss_pc = \
-          torch.zeros(net.num_classes, device=device), \
-          torch.zeros(net.num_classes, device=device)
-      if train:
-        with torch.no_grad():
-          with dl_test.dataset.dataset.skip_augment():
-            testres = _do(net, dl_train, dl_test, loss_fn, None, False)
-          losses_test.append(sum(testres[0])/len(testres[0]))
-          accs_test.append(sum(testres[1])/len(testres[1]))
-          losses_pc.append(sum(testres[2])/len(testres[2]))
-          accs_pc.append(sum(testres[3])/len(testres[3]))
-        progr.set_postfix(
-            loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}",
-            test_loss=f"{losses_test[-1]:.4f}", test_acc=f"{accs_test[-1]:.2f}")
-      else:
-        progr.set_postfix(loss=f"{losses[-1]:.4f}", acc=f"{accs[-1]:.2f}")
-
-  if train:
-    return (losses, accs), (losses_test, accs_test), (losses_pc, accs_pc)
-  else:
-    return losses, accs, losses_pc, accs_pc
-
-
-def train(net, dl_train, dl_test):
-  optim = torch.optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-  loss_fn = nn.CrossEntropyLoss(reduction='none')
-
-  mn_loss = torch.inf
-  trainloss, trainacc = [], []
-  testloss, testacc = [], []
-  pcloss, pcacc = [], []
-  for epoch in range(EPOCHS):
-    print(f"{epoch+1:02} of {EPOCHS:02}")
-    trainres, testres, pcres = _do(net, dl_train, dl_test, loss_fn, optim, True)
-
-    trainloss.extend(trainres[0])
-    trainacc.extend(trainres[1])
-    testloss.extend(testres[0])
-    testacc.extend(testres[1])
-    pcloss.extend(pcres[0])
-    pcacc.extend(pcres[1])
-
-    if testloss[-1] < mn_loss:
-      print('saving', name := f"model_{os.getenv('WEAPON', 'all')}.pt")
-      torch.save(net.state_dict(), os.path.join('.', name))
-      mn_loss = testloss[-1]
-
-  return (trainloss, trainacc), (testloss, testacc), (pcloss, pcacc)
+  @torch.no_grad()
+  def __call__(self):
+    x, l = zip(*[(x, l) for x,l,_ in self.dataset])
+    x = torch.stack(x).to(device)
+    l = torch.tensor(l).to(device)
+    y = self.net(x)
+    pred = y.argmax(1).int()
+    # confusion matrix
+    M = torch.zeros((self.net.num_classes, self.net.num_classes), dtype=int)
+    for pred_l in zip(pred, l):
+      M[pred_l] += 1
+    acc_pc = torch.tensor([M[c,c] / self.counts[c] for c in range(self.net.num_classes)])
+    a,b = torch.unique(l, return_counts=True)
+    print('lv', a)
+    print('lc', b)
+    a,b = torch.unique(pred, return_counts=True)
+    print('pv', a)
+    print('pc', b)
+    print(acc_pc)
+    return \
+      dict(
+        test_loss=self.loss_fn(y, l).item(),
+        test_acc=acc_pc.mean().item(),
+        test_acc_pc=acc_pc.tolist(),
+      ), M
 
 
 @torch.no_grad()

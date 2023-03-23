@@ -33,101 +33,76 @@ def tile(img, kernel=25, stride=2):
   return res
 
 
-def plt_res(trainres, testres, pcres, classes, epochs, save=True):
+def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, classes, save=True):
   if save:
+    args = locals()
+    del args["save"]
+    if "self" in args:
+      del args["self"]
     with open(f'metrics_{int(time()*1000000)}.pkl', 'wb') as f:
-      pickle.dump(
-        dict(
-          trainres=trainres,
-          testres=testres,
-          pcres=pcres,
-          classes=classes,
-          epochs=epochs),
-        f)
-
-  trainloss, trainacc = trainres
-  testloss, testacc = testres
-  pcloss, pcacc = [np.concatenate(x).reshape((-1,len(classes))).transpose((1,0)) for x in pcres]
+      pickle.dump(args, f)
 
   plt.style.use("dark_background")
   plt.rcParams["figure.figsize"] = (15,10)
   plt.rcParams["savefig.dpi"] = 200
-  fig, ((lossax, accax), (losspcax, accpcax)) = plt.subplots(2, 2)
+  fig, ((lossax, accax), (accpcax,_)) = plt.subplots(2, 2)
 
-  lsa = np.linspace(1, epochs, len(trainloss))
-  lsb = np.linspace(1, epochs, pcloss.shape[1])
+  linsp = np.linspace(1, epochs, len(loss))
+  if not (len(test_loss) == len(test_acc) == len(test_acc_pc)):
+    raise Exception("test metrics must all have the same length")
+  linsp_test = np.linspace(1, epochs, len(test_loss))
 
-  lossax.plot(lsa, trainloss, label='train')
-  lossax.plot(lsa, testloss, label='test')
+  lossax.plot(linsp, loss, label='train')
+  lossax.plot(linsp_test, test_loss, label='test')
   lossax.set_ylabel('mean loss')
 
-  accax.plot(lsa, trainacc, label='train')
-  accax.plot(lsa, testacc, label='test')
+  accax.plot(linsp, acc, label='train')
+  accax.plot(linsp_test, test_acc, label='test')
   accax.set_ylabel('mean accuracy')
 
-  pclosslines = []
-  colors = {}
-  for i in (-pcloss[:,-1]).argsort():
-    x, = losspcax.plot(lsb, pcloss[i,:], label=f"{classes[i]} {pcloss[i,-1]:.4f}")
-    colors[classes[i]] = x.get_color()
-    pclosslines.append(x)
-  losspcax.set_ylabel('per-class mean loss')
-
+  pcacc = np.array(test_acc_pc).transpose((1,0))
   pcacclines = []
+  colors = {}  # remember colors for potential future use
   for i in (-pcacc[:,-1]).argsort():
     x, = accpcax.plot(
-      lsb,
+      linsp_test,
       pcacc[i,:],
-      color=colors[classes[i]],
       label=f"{classes[i]} {round(pcacc[i,-1]*100)}%")
+    colors[classes[i]] = x.get_color()
     pcacclines.append(x)
   accpcax.set_ylabel('per-class mean accuracy')
 
-  losspcax.set_xlabel('epoch')
   accpcax.set_xlabel('epoch')
 
   lossax.legend()
   accax.legend()
-  losspcleg = losspcax.legend(fontsize=5.5, labelspacing=0)
   accpcleg = accpcax.legend(fontsize=5.5, labelspacing=0)
 
-  lined = [{}, {}]
-  for legline, origline in zip(losspcleg.get_lines(), pclosslines):
-    legline.set_picker(True)
-    legline.set_linewidth(4.0)
-    lined[0][legline] = origline
+  lined = {}
   for legline, origline in zip(accpcleg.get_lines(), pcacclines):
     legline.set_picker(True)
     legline.set_linewidth(4.0)
-    lined[1][legline] = origline
+    lined[legline] = origline
 
   def on_pick(event):
-    li = lined[::-1] if event.artist.axes == accpcax else lined
-    if all(v.get_visible() for v in li[0].values()):
+    if all(v.get_visible() for v in lined.values()):
       # all are visible
-      for k,v in li[0].items():
+      for k,v in lined.items():
         if k != event.artist:
           v.set_visible(False)
           k.set_alpha(.2)
-    elif len(vis := [(k,v) for k,v in li[0].items() if v.get_visible()]) == 1 \
+    elif len(vis := [(k,v) for k,v in lined.items() if v.get_visible()]) == 1 \
       and vis[0][0] == event.artist:
       # one is visible and it's clicked
-      for k,v in li[0].items():
+      for k,v in lined.items():
         v.set_visible(True)
         k.set_alpha(1.)
     else:
       legline = event.artist
-      origline = li[0][legline]
+      origline = lined[legline]
       visible = not origline.get_visible()
       origline.set_visible(visible)
       legline.set_alpha(1. if visible else .2)
-    # cascade to accpc
-    for v in li[0].values():
-      name, visible = v.get_label().split(' ')[0], v.get_visible()
-      for k1, v1 in li[1].items():
-        if v1.get_label().split(' ')[0] == name:
-          v1.set_visible(visible)
-          k1.set_alpha(1. if visible else .2)
     fig.canvas.draw()
   fig.canvas.mpl_connect('pick_event', on_pick)
 

@@ -32,25 +32,27 @@ def _worker(q, thres, target_dir):
 
 
 class Runner:
-  def __init__(self):
-    self.epochs = multinet.EPOCHS
   
   def pretrained(self, path):
-    self.net = multinet.pretrained(path).device()
+    self.net = multinet.pretrained(path)
     print(f'using existing model {path}')
     if self.net.num_classes != len(dataset.CLASSES):
       raise Exception(f"{self.net.num_classes} classes in model but {len(dataset.CLASSES)} expected")
 
   def net(self):
-    self.net = multinet.MultiNet(len(dataset.CLASSES)).device()
+    self.net = multinet.MultiNet(len(dataset.CLASSES))
 
   def dataset(self):
     self.ds = dataset.MultiSet()
     return self.ds
 
-  def train(self, dl_train, dl_test):
-    args = self.net, dl_train, dl_test
-    return multinet.train(*args)
+  def train(self, dl_train, ds_test):
+    trainer = multinet.Trainer(
+      self.net,
+      dataset.CLASSES,
+      dl_train,
+      multinet.Tester(self.net, ds_test, dataset.counts(ds_test)))
+    return tuple([*trainer(), trainer.epochs])
     
   def pred(self, x):
     y = multinet.pred(self.net, dataset.transform(x))
@@ -87,6 +89,7 @@ if __name__ == "__main__":
     Runner.help()
     exit()
   runner = Runner()
+  print('classes', dataset.CLASSES)
 
   # pretrained model
   if len(sys.argv) > 2:
@@ -124,9 +127,8 @@ if __name__ == "__main__":
     print('train data', dataset.counts(ds_train, transl=True))
     print('test data', dataset.counts(ds_test, transl=True))
     dl_train = dataset.MultiSet.load(ds_train, weighted=True)
-    dl_test = dataset.MultiSet.load(ds_test, weighted=True, batch_size=len(ds_test))
-    trainres, testres, pcres = runner.train(dl_train, dl_test)
-    visual.plt_res(trainres, testres, pcres, dataset.CLASSES, runner.epochs)
+    plots, conf_mat, epochs = runner.train(dl_train, ds_test)
+    visual.plt_res(**plots, conf_mat=conf_mat, epochs=epochs, classes=dataset.CLASSES)
     exit()
 
   else:
