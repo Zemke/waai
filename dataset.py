@@ -161,7 +161,7 @@ class MultiSet(Dataset):
     file, clazz = self.df.iloc[idx]
     label = torch.tensor(CLASSES.index(clazz))
     if self._ctx_skip_imread:
-      return None, label
+      return None, label, file
     img = read_image(os.path.join(self.img_dir, file), ImageReadMode.RGB)
     return self.compose_transform(clazz)(img), label, file
 
@@ -204,7 +204,7 @@ class MultiSet(Dataset):
     if weighted:
       cnt = 1 / torch.tensor(counts(dataset))
       with dataset.dataset.skip_imread():
-        weights = [cnt[v] for _,v in dataset]
+        weights = [cnt[v] for _,v,_ in dataset]
       sampler = WeightedRandomSampler(weights, len(dataset))
       opts["sampler"] = sampler
     return DataLoader(dataset, **opts)
@@ -216,7 +216,7 @@ def splitset(ds):
 
 def counts(ds, transl=False):
   with ds.dataset.skip_imread():
-    c = Counter(l.item() for _,l in ds)
+    c = Counter(l.item() for _,l,_ in ds)
     c.update(i for i in range(len(CLASSES)))  # there could be missing classes
     if transl:
       return {CLASSES[v]: n for v,n in c.most_common()}
