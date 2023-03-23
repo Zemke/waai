@@ -217,7 +217,7 @@ def splitset(ds):
 def counts(ds, transl=False):
   with ds.dataset.skip_imread():
     c = Counter(l.item() for _,l,_ in ds)
-    c.update(i for i in range(len(CLASSES)))  # there could be missing classes
+    c.update({i: 0 for i in range(len(CLASSES))})  # there could be missing classes
     if transl:
       return {CLASSES[v]: n for v,n in c.most_common()}
     return [c[i] for i in range(len(c))]
