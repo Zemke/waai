@@ -190,24 +190,39 @@ class MultiSet(Dataset):
     return default_collate([(x,l) for x,l,_ in batch])
 
   @staticmethod
-  def load(dataset, weighted=False, **opts):
-    if not isinstance(dataset.dataset, MultiSet):
+  def load(ds, weighted=False, **opts):
+    if not isinstance(ds.dataset, MultiSet):
       raise Exception("load is only for MultiSet or Subset of it")
     if "batch_size" not in opts:
       opts["batch_size"] = int(os.getenv('BATCH', 8))
-    if "collate_fn" not in opts and isinstance(dataset.dataset, MultiSet):
+    if "collate_fn" not in opts and isinstance(ds.dataset, MultiSet):
       opts["collate_fn"] = MultiSet.collate_fn
-    if "num_workers" not in opts and len(dataset) != opts["batch_size"]:
+    if "num_workers" not in opts and len(ds) != opts["batch_size"]:
       opts.update({"num_workers": 4, "persistent_workers": True})
     if "pin_memory" not in opts and os.getenv("GPU") == '1':
       opts["pin_memory"] = True
     if weighted:
-      cnt = 1 / torch.tensor(counts(dataset))
-      with dataset.dataset.skip_imread():
-        weights = [cnt[v] for _,v,_ in dataset]
-      sampler = WeightedRandomSampler(weights, len(dataset))
+      # TODO cache weights
+      print('weighing classes')
+      with ds.dataset.skip_imread():
+        bg_c = Counter(f.split("/")[1] for _,l,f in ds if l == 0)
+      cnt = 1 / torch.tensor(counts(ds))
+      bg_mul = (len(bg_c) - (maps_mul := 4)) / (len(bg_c) - 1), maps_mul
+      with ds.dataset.skip_imread():
+        weights = [cnt[v] for _,v,_ in ds]
+      for i, w in enumerate(weights):
+        with ds.dataset.skip_imread():
+          _,l,f = ds[i]
+        if l == 0:
+          bg = f.split("/")[1]
+          weights[i] = 1 / bg_c[bg] * (bg_mul[int(bg == "maps")] / len(bg_c))
+      sampler = WeightedRandomSampler(weights, len(ds))
+      print("exemplary sampling:")
+      with ds.dataset.skip_imread():
+        print(Counter(CLASSES[ds[s][1].item()] for s in sampler).most_common())
+        print(Counter(ds[s][2].split("/")[1] for s in sampler if ds[s][1] == 0).most_common())
       opts["sampler"] = sampler
-    return DataLoader(dataset, **opts)
+    return DataLoader(ds, **opts)
 
 
 def splitset(ds):
