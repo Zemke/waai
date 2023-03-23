@@ -1,16 +1,7 @@
 #!/bin/bash
 
 cd samples
-echo "file,class" > annot.csv
-
-tot=0
-for f in $(find . -maxdepth 1 -type d | grep .. | cut -c3- | sort); do
-  pos=$(ls -1 -- $f | grep -iE '\.(png|jpe?g)$' | xargs -I% -n1 echo "${f}/%,${f}")
-  echo "$pos" >> annot.csv
-  c=$(echo "$pos" | wc -l)
-  echo $c $f
-  tot=$((tot+c))
-done
-
-echo "${tot} in total"
+find * -type f | grep -iE '\.(png|jpe?g)$' > annot.csv
+tail -n+2 annot.csv | cut -d / -f1 | sort | uniq -c | sort -
+echo "$(wc -l < annot.csv) in total"
 
