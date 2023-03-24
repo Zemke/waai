@@ -23,7 +23,7 @@ if __name__ == "__main__":
   import dataset
   ds = dataset.splitset(dataset.MultiSet())[0]
   with ds.dataset.skip_normalize():
-    dl = dataset.load(ds, batch_size=len(ds), weighted=True)
+    dl = dataset.MultiSet.load(ds, batch_size=len(ds), weighted=True)
     assert len(dl) == 1
     d = next(iter(dl))[0]
     assert d.shape == (len(ds), 3, dataset.H, dataset.W)
