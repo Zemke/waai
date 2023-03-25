@@ -142,13 +142,6 @@ class Tester:
     for pred_l in zip(pred, l):
       M[pred_l] += 1
     acc_pc = torch.tensor([M[c,c] / self.counts[c] for c in range(self.net.num_classes)])
-    a,b = torch.unique(l, return_counts=True)
-    print('lv', a)
-    print('lc', b)
-    a,b = torch.unique(pred, return_counts=True)
-    print('pv', a)
-    print('pc', b)
-    print(acc_pc)
     return \
       dict(
         test_loss=self.loss_fn(y, l).item(),
