@@ -260,6 +260,7 @@ if __name__ == "__main__":
   else:
     clazzes = CLASSES
   ds = MultiSet()
+  ds.df = ds.df[ds.df["class"].isin(clazzes)]
   print(counts(ds, transl=True))
   BS = 256
   dl = MultiSet.load(ds, weighted=True,
