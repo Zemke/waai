@@ -33,6 +33,8 @@ CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder"]
 AUG = {
   "bg": [
     T.RandomHorizontalFlip(p=.5),
+    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+    T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
   ],
   "girder": [
     T.RandomHorizontalFlip(p=.5),
@@ -257,10 +259,10 @@ if __name__ == "__main__":
       break
   else:
     clazzes = CLASSES
-  ds = MultiSet(clazzes)
+  ds = MultiSet()
   print(counts(ds, transl=True))
   BS = 256
-  dl = MultiSet.load(ds, clazzes, weighted=True,
+  dl = MultiSet.load(ds, weighted=True,
                      batch_size=BS, num_workers=0,
                      collate_fn=default_collate)
   with ds.skip_normalize(not norm):
