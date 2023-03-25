@@ -31,7 +31,9 @@ CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder"]
 
 
 AUG = {
-  "bg": [],  # TODO bg: horizontal flip? affine? resizedcrop?
+  "bg": [
+    T.RandomHorizontalFlip(p=.5),
+  ],
   "girder": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
