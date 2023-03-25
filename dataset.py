@@ -18,6 +18,8 @@ import pandas as pd
 import visual
 
 
+CACHE_FILE = './samples/.weighted_samples.pkl'
+
 STD, MEAN = (0.301, 0.262, 0.283), (0.401, 0.311, 0.256)
 C, W, H = 3, 30, 30
 
@@ -196,6 +198,7 @@ class MultiSet(Dataset):
   @staticmethod
   def load(ds, weighted=False, **opts):
     if not isinstance(ds.dataset, MultiSet):
+      # TODO could maybe be a member method then?
       raise Exception("load is only for MultiSet or Subset of it")
     if "batch_size" not in opts:
       opts["batch_size"] = int(os.getenv('BATCH', 8))
@@ -206,25 +209,39 @@ class MultiSet(Dataset):
     if "pin_memory" not in opts and os.getenv("GPU") == '1':
       opts["pin_memory"] = True
     if weighted:
-      # TODO cache weights
-      print('weighing classes')
+      sampler = None
+      import pickle
+      from hashlib import md5
       with ds.dataset.skip_imread():
-        bg_c = Counter(f.split("/")[1] for _,l,f in ds if l == 0)
-      cnt = 1 / torch.tensor(counts(ds))
-      bg_mul = (len(bg_c) - (maps_mul := 4)) / (len(bg_c) - 1), maps_mul
-      with ds.dataset.skip_imread():
-        weights = [cnt[v] for _,v,_ in ds]
-      for i, w in enumerate(weights):
+        hash_files = md5(','.join(sorted([f for _,_,f in ds])).encode()).hexdigest()
+      if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'rb') as f:
+          cached_hash_files, weights = pickle.load(f)
+        if cached_hash_files == hash_files:
+          sampler = WeightedRandomSampler(weights, len(ds))
+          print('weighted samples from cache')
+      if sampler is None:
+        print('weighing classes')
         with ds.dataset.skip_imread():
-          _,l,f = ds[i]
-        if l == 0:
-          bg = f.split("/")[1]
-          weights[i] = 1 / bg_c[bg] * (bg_mul[int(bg == "maps")] / len(bg_c))
-      sampler = WeightedRandomSampler(weights, len(ds))
-      print("exemplary sampling:")
-      with ds.dataset.skip_imread():
-        print(Counter(CLASSES[ds[s][1].item()] for s in sampler).most_common())
-        print(Counter(ds[s][2].split("/")[1] for s in sampler if ds[s][1] == 0).most_common())
+          bg_c = Counter(f.split("/")[1] for _,l,f in ds if l == 0)
+        cnt = 1 / torch.tensor(counts(ds))
+        bg_mul = (len(bg_c) - (maps_mul := 4)) / (len(bg_c) - 1), maps_mul
+        with ds.dataset.skip_imread():
+          weights = [cnt[v] for _,v,_ in ds]
+        for i, w in enumerate(weights):
+          with ds.dataset.skip_imread():
+            _,l,f = ds[i]
+          if l == 0:
+            bg = f.split("/")[1]
+            weights[i] = 1 / bg_c[bg] * (bg_mul[int(bg == "maps")] / len(bg_c))
+        sampler = WeightedRandomSampler(weights, len(ds))
+        if int(os.getenv('DEBUG', 0)) > 0:
+          print("exemplary sampling:")
+          with ds.dataset.skip_imread():
+            print(Counter(CLASSES[ds[s][1].item()] for s in sampler).most_common())
+            print(Counter(ds[s][2].split("/")[1] for s in sampler if ds[s][1] == 0).most_common())
+        with open(CACHE_FILE, 'wb') as f:
+          pickle.dump([hash_files, weights], f)
       opts["sampler"] = sampler
     return DataLoader(ds, **opts)
 

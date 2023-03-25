@@ -121,11 +121,12 @@ if __name__ == "__main__":
   # train new model
   elif len(sys.argv) == 1:
     data = runner.dataset()
-    print('all data', dataset.counts(data, transl=True))
     runner.net()
     ds_train, ds_test = dataset.splitset(data)
-    print('train data', dataset.counts(ds_train, transl=True))
-    print('test data', dataset.counts(ds_test, transl=True))
+    if int(os.getenv('DEBUG', 0)) > 0:
+      print('all data', dataset.counts(data, transl=True))
+      print('train data', dataset.counts(ds_train, transl=True))
+      print('test data', dataset.counts(ds_test, transl=True))
     dl_train = dataset.MultiSet.load(ds_train, weighted=True)
     plots, conf_mat, epochs = runner.train(dl_train, ds_test)
     visual.plt_res(**plots, conf_mat=conf_mat, epochs=epochs, classes=dataset.CLASSES)
