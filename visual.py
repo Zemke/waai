@@ -43,9 +43,17 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
       pickle.dump(args, f)
 
   plt.style.use("dark_background")
-  plt.rcParams["figure.figsize"] = (15,10)
+  plt.rcParams["figure.figsize"] = (15,5)
   plt.rcParams["savefig.dpi"] = 200
-  fig, ((lossax, accax), (accpcax,_)) = plt.subplots(2, 2)
+  fig, (lossax, accax, accpcax) = plt.subplots(1, 3)
+
+  lossax.title.set_text('mean loss')
+  accax.title.set_text('mean accuracy')
+  accpcax.title.set_text('per-class mean accuracy')
+
+  lossax.set_xlabel('epoch')
+  accax.set_xlabel('epoch')
+  accpcax.set_xlabel('epoch')
 
   linsp = np.linspace(1, epochs, len(loss))
   if not (len(test_loss) == len(test_acc) == len(test_acc_pc)):
@@ -54,11 +62,9 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
 
   lossax.plot(linsp, loss, label='train')
   lossax.plot(linsp_test, test_loss, label='test')
-  lossax.set_ylabel('mean loss')
 
   accax.plot(linsp, acc, label='train')
   accax.plot(linsp_test, test_acc, label='test')
-  accax.set_ylabel('mean accuracy')
 
   pcacc = np.array(test_acc_pc).transpose((1,0))
   pcacclines = []
@@ -70,9 +76,6 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
       label=f"{classes[i]} {round(pcacc[i,-1]*100)}%")
     colors[classes[i]] = x.get_color()
     pcacclines.append(x)
-  accpcax.set_ylabel('per-class mean accuracy')
-
-  accpcax.set_xlabel('epoch')
 
   lossax.legend()
   accax.legend()
@@ -107,8 +110,8 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
   fig.canvas.mpl_connect('pick_event', on_pick)
 
   plt.subplots_adjust(
-    left=.05, right=.99, top=.99, bottom=0.05,
-    wspace=.12, hspace=.1)
+    left=.05, right=.97, top=.9, bottom=.1,
+    wspace=.2, hspace=.1)
   plt.show()
 
 
