@@ -65,16 +65,17 @@ class Runner:
     for c in dataset.CLASSES:
       os.mkdir(os.path.join(target_dir, c))
 
-    from multiprocessing import Process, Queue
-    (p := Process(target=_worker, args=(q := Queue(), thres, target_dir))).start()
+    from multiprocessing import Queue, Pool, cpu_count
 
-    dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
-    for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
-      f = ds.imgs[i].split('/')[-1][:-4]
-      progr.set_postfix(f=f)
-      q.put((tiles, origs, multinet.pred_capture(self.net, tiles), f))
-    q.put("DONE")
-    q.join()
+    with Pool(cpu_count()-1 or 1, _worker, (q := Queue(1000), thres, target_dir)) as pool:
+      dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
+      for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
+        f = ds.imgs[i].split('/')[-1][:-4]
+        q.put((tiles, origs, multinet.pred_capture(self.net, tiles), f))
+        progr.set_postfix(f=f)
+      q.put("DONE")
+      q.close()
+      q.join_thread()
 
   @staticmethod
   def help():
