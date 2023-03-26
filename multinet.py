@@ -131,8 +131,9 @@ class Tester:
     self.loss_fn = nn.CrossEntropyLoss(self.weight)
 
   @torch.no_grad()
-  def __call__(self):
-    x, l = zip(*[(x, l) for x,l,_ in self.dataset])
+  def __call__(self, net):
+    with self.dataset.dataset.skip_augment():
+      x, l = zip(*[(x, l) for x,l,_ in self.dataset])
     x = torch.stack(x).to(device)
     l = torch.tensor(l).to(device)
     y = net(x)
