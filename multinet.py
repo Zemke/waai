@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from tqdm import trange, tqdm
+from tqdm import tqdm
 from collections import Counter
 
 device = torch.device(
@@ -76,6 +76,7 @@ class Trainer:
         total=len(self.dataloader),
         colour='yellow',
         postfix=(pf := {}),
+        desc=f"{epoch:02}"
       )):
         self.optim.zero_grad()
 
