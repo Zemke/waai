@@ -34,6 +34,7 @@ def tile(img, kernel=25, stride=2):
 
 
 def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, classes, save=True):
+  print(conf_mat)
   if save:
     args = locals()
     del args["save"]
@@ -113,6 +114,8 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
     left=.05, right=.97, top=.9, bottom=.1,
     wspace=.2, hspace=.1)
   plt.show()
+
+  # TODO show weighed confusion matrix
 
 
 def write_img(img, path, name):
