@@ -100,7 +100,7 @@ class Trainer:
           stepped -= stepped
 
           if last_batch:
-            test_metric, conf_mat = self.tester()
+            test_metric, conf_mat = self.tester(self.net)
             for k,v in test_metric.items():
               self.metric[k].append(test_metric[k])
 
@@ -123,8 +123,7 @@ class Trainer:
 
 
 class Tester:
-  def __init__(self, net, dataset, counts):
-    self.net = net
+  def __init__(self, dataset, counts):
     self.dataset = dataset
     self.counts = counts
     self.weight = (reciprocal := (1 / torch.tensor(counts, device=device))) / sum(reciprocal)
@@ -135,13 +134,13 @@ class Tester:
     x, l = zip(*[(x, l) for x,l,_ in self.dataset])
     x = torch.stack(x).to(device)
     l = torch.tensor(l).to(device)
-    y = self.net(x)
+    y = net(x)
     pred = y.argmax(1).int()
     # confusion matrix
-    M = torch.zeros((self.net.num_classes, self.net.num_classes), dtype=int)
+    M = torch.zeros((net.num_classes, net.num_classes), dtype=int)
     for pred_l in zip(pred, l):
       M[pred_l] += 1
-    acc_pc = torch.tensor([M[c,c] / self.counts[c] for c in range(self.net.num_classes)])
+    acc_pc = torch.tensor([M[c,c] / self.counts[c] for c in range(net.num_classes)])
     return \
       dict(
         test_loss=self.loss_fn(y, l).item(),

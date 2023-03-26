@@ -51,7 +51,7 @@ class Runner:
       self.net,
       dataset.CLASSES,
       dl_train,
-      multinet.Tester(self.net, ds_test, dataset.counts(ds_test)))
+      multinet.Tester(ds_test, dataset.counts(ds_test)))
     return tuple([*trainer(), trainer.epochs])
     
   def pred(self, x):
