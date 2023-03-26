@@ -235,13 +235,13 @@ class MultiSet(Dataset):
             bg = f.split("/")[1]
             weights[i] = 1 / bg_c[bg] * (bg_mul[int(bg == "maps")] / len(bg_c))
         sampler = WeightedRandomSampler(weights, len(ds))
-        if int(os.getenv('DEBUG', 0)) > 0:
-          print("exemplary sampling:")
-          with ds.dataset.skip_imread():
-            print(Counter(CLASSES[ds[s][1].item()] for s in sampler).most_common())
-            print(Counter(ds[s][2].split("/")[1] for s in sampler if ds[s][1] == 0).most_common())
         with open(CACHE_FILE, 'wb') as f:
           pickle.dump([hash_files, weights], f)
+      if int(os.getenv('DEBUG', 0)) > 0:
+        print("exemplary sampling:")
+        with ds.dataset.skip_imread():
+          print(Counter(CLASSES[ds[s][1].item()] for s in sampler).most_common())
+          print(Counter(ds[s][2].split("/")[1] for s in sampler if ds[s][1] == 0).most_common())
       opts["sampler"] = sampler
     return DataLoader(ds, **opts)
 
