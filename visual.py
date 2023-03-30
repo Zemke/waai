@@ -34,7 +34,7 @@ def tile(img, kernel=25, stride=2):
 
 
 def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, classes, save=True):
-  print(conf_mat)
+
   if save:
     args = locals()
     del args["save"]
@@ -44,13 +44,13 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
       pickle.dump(args, f)
 
   plt.style.use("dark_background")
-  plt.rcParams["figure.figsize"] = (15,5)
+  plt.rcParams["figure.figsize"] = (10,8)
   plt.rcParams["savefig.dpi"] = 200
-  fig, (lossax, accax, accpcax) = plt.subplots(1, 3)
+  fig, ((lossax, accax), (accpcax, mat)) = plt.subplots(2, 2)
 
-  lossax.title.set_text('mean loss')
-  accax.title.set_text('mean accuracy')
-  accpcax.title.set_text('per-class mean accuracy')
+  lossax.set_ylabel('mean loss')
+  accax.set_ylabel('mean accuracy')
+  accpcax.set_ylabel('per-class mean accuracy')
 
   lossax.set_xlabel('epoch')
   accax.set_xlabel('epoch')
@@ -110,12 +110,18 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
     fig.canvas.draw()
   fig.canvas.mpl_connect('pick_event', on_pick)
 
-  plt.subplots_adjust(
-    left=.05, right=.97, top=.9, bottom=.1,
-    wspace=.2, hspace=.1)
-  plt.show()
+  weights = (recip := 1 / conf_mat.sum(0)) / sum(recip)
+  weighted_conf_mat = ((conf_mat * weights.repeat(7,1)) * 10).round().int()
+  mat.matshow(weighted_conf_mat, cmap='seismic')
+  mat.set_xticks(range(len(classes)), classes, size='small')
+  mat.set_yticks(range(len(classes)), classes, size='small')
+  mat.set_ylabel("weighted prediction")
+  mat.set_xlabel("weighted label")
+  for (i, j), z in np.ndenumerate(weighted_conf_mat):
+    mat.text(j, i, str(z), ha='center', va='center')
 
-  # TODO show weighed confusion matrix
+  plt.tight_layout()
+  plt.show()
 
 
 def write_img(img, path, name):
