@@ -25,6 +25,8 @@ def _worker(q, thres, target_dir):
       if prob < thres:
         continue
       clazz = dataset.CLASSES[mx[k]]
+      if clazz == "bg":
+        continue
       visual.write_img(
         origs[k],
         os.path.join(target_dir, clazz),
@@ -63,7 +65,8 @@ class Runner:
     print(f'output threshold >={thres*100}% per tile')
 
     for c in dataset.CLASSES:
-      os.mkdir(os.path.join(target_dir, c))
+      if c != "bg":
+        os.mkdir(os.path.join(target_dir, c))
 
     from multiprocessing import Queue, Pool, cpu_count
 
