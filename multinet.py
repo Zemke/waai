@@ -64,6 +64,7 @@ class Trainer:
 
     self.metric = {k: [] for k in ["loss", "acc", "test_loss", "test_acc", "test_acc_pc"]}
     mn_test_loss = 9e+9
+    best_conf_mat = None
     running_acc = torch.tensor(0., device=device)
     running_loss = torch.tensor(0., device=device)
     stepped = torch.tensor(0., device=device)
@@ -112,6 +113,7 @@ class Trainer:
             if self.metric["test_loss"][-1] < mn_test_loss:
               progr.colour = 'green'
               mn_test_loss = self.metric["test_loss"][-1]
+              best_conf_mat = conf_mat
               torch.save(self.net.state_dict(), "./model.pt")
             else:
               progr.colour = 'red'
@@ -120,7 +122,7 @@ class Trainer:
           pf["acc"] = f"{self.metric['acc'][-1]:.2f}"
           progr.set_postfix(pf)
 
-    return self.metric, conf_mat
+    return self.metric, best_conf_mat
 
 
 class Tester:

@@ -115,10 +115,14 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
   mat.matshow(weighted_conf_mat, cmap='seismic')
   mat.set_xticks(range(len(classes)), classes, size='small')
   mat.set_yticks(range(len(classes)), classes, size='small')
-  mat.set_ylabel("weighted prediction")
-  mat.set_xlabel("weighted label")
+  mat.set_ylabel("prediction")
+  mat.set_xlabel("label")
   for (i, j), z in np.ndenumerate(weighted_conf_mat):
     mat.text(j, i, str(z), ha='center', va='center')
+  mat.text(
+    len(classes) // 2, len(classes) + 1,
+    'weighted confusion matrix at min test loss',
+    size='small', ha='center')
 
   plt.tight_layout()
   plt.show()
