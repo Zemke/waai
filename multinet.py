@@ -13,7 +13,6 @@ device = torch.device(
   'cuda' if torch.cuda.is_available() else
   'mps' if torch.backends.mps.is_available() else
   'cpu') if os.getenv("GPU", False) == "1" else "cpu"
-#print("device is", device)
 
 
 class MultiNet(nn.Module):
@@ -30,6 +29,7 @@ class MultiNet(nn.Module):
     self.fc4 = nn.Linear(100, num_classes)
 
     self.to(device)
+    print("moved net to", device)
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.pool(F.relu(self.conv1(x)))
