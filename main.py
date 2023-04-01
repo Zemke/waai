@@ -37,7 +37,6 @@ class Runner:
   
   def pretrained(self, path):
     self.net = multinet.pretrained(path)
-    print(f'using existing model {path}')
     if self.net.num_classes != len(dataset.CLASSES):
       raise Exception(f"{self.net.num_classes} classes in model but {len(dataset.CLASSES)} expected")
 
