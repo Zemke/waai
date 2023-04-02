@@ -14,25 +14,6 @@ from tqdm import tqdm
 import numpy as np
 
 
-def _worker(q, thres, target_dir):
-  while 1:
-    if (deq := q.get()) == "DONE":
-      break
-    tiles, origs, preds, f = deq
-    mx = preds.argmax(1)
-    for k in range(len(tiles)):
-      prob = preds[k][mx[k]]
-      if prob < thres:
-        continue
-      clazz = dataset.CLASSES[mx[k]]
-      if clazz == "bg":
-        continue
-      visual.write_img(
-        origs[k],
-        os.path.join(target_dir, clazz),
-        f"{clazz}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
-
-
 class Runner:
   
   def pretrained(self, path):
@@ -67,17 +48,23 @@ class Runner:
       if c != "bg":
         os.mkdir(os.path.join(target_dir, c))
 
-    from multiprocessing import Queue, Pool, cpu_count
-
-    with Pool(cpu_count()-1 or 1, _worker, (q := Queue(1000), thres, target_dir)) as pool:
-      dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
-      for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
-        f = ds.imgs[i].split('/')[-1][:-4]
-        q.put((tiles, origs, multinet.pred_capture(self.net, tiles), f))
+    dl = dataset.CaptureSet.load(ds := dataset.CaptureSet(source_dir, target_dir))
+    for i, (tiles, origs) in (progr := tqdm(enumerate(dl), total=len(dl))):
+      f = ds.imgs[i].split('/')[-1][:-4]
+      preds = multinet.pred_capture(self.net, tiles)
+      mx = preds.argmax(1)
+      for k in range(len(tiles)):
+        prob = preds[k][mx[k]]
+        if prob < thres:
+          continue
+        clazz = dataset.CLASSES[mx[k]]
+        if clazz == "bg":
+          continue
+        visual.write_img(
+          origs[k],
+          os.path.join(target_dir, clazz),
+          f"{clazz}_{prob*100:.0f}_{f}_{time()*1e+6:.0f}.png")
         progr.set_postfix(f=f)
-      q.put("DONE")
-      q.close()
-      q.join_thread()
 
   @staticmethod
   def help():
