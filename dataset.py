@@ -286,7 +286,7 @@ if __name__ == "__main__":
   with ds.skip_normalize(not norm):
     x, l, f = next(iter(dl))
     with ds.skip_augment():
-      o = torch.stack([ds.compose_transform(clazzes[l[i]])(read_image(os.path.join(ds.img_dir, f[i]), ImageReadMode.RGB)) for i in range(BS)])
+      o = torch.stack([ds.compose_transform(CLASSES[l[i]])(read_image(os.path.join(ds.img_dir, f[i]), ImageReadMode.RGB)) for i in range(BS)])
   s = torch.cat((x,o),-1)
   plt.figure(figsize=(14,8))
   plt.xticks([])
