@@ -29,7 +29,7 @@ TRANSFORMS = [
   T.ToTensor(),
   T.Normalize(std=STD, mean=MEAN),
 ]
-CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder"]
+CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder", "skunk"]
 
 
 AUG = {
@@ -71,6 +71,13 @@ AUG = {
     T.RandomHorizontalFlip(p=.5),
     T.RandomResizedCrop((H, W), scale=(.3, 1.)),
     T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+  ],
+  "skunk": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
   ],
 }
 
