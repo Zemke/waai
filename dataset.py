@@ -35,42 +35,56 @@ CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder", "skunk
 AUG = {
   "bg": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
-    T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
   ],
   "girder": [
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
-    T.RandomAffine(degrees=0, translate=(.3,.3)),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
+      T.RandomAffine(degrees=0, translate=(.3,.3)),
+    ]),
     T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
   ],
   "barrel": [
     T.ColorJitter(brightness=(1.,3.)),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.2,.2)),
-    T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
+    T.RandomChoice([
+      T.RandomAffine(degrees=0, translate=(.2,.2)),
+      T.RandomResizedCrop((H, W), scale=(.8, 1.), ratio=(.3, 1.5)),
+    ]),
   ],
   "mine": [
-    T.RandomAffine(degrees=180, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
     T.RandomHorizontalFlip(p=.5),
     T.RandomVerticalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.5, 1.)),
+    T.RandomChoice([
+      T.RandomAffine(degrees=180, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
+      T.RandomResizedCrop((H, W), scale=(.5, 1.)),
+    ]),
   ],
   "worm": [
-    T.RandomAffine(degrees=15, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomAffine(degrees=15, translate=(.2,.2), interpolation=InterpolationMode.BILINEAR),
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+    ]),
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
   ],
   "dynamite": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomAffine(degrees=0, translate=(.1,.25), interpolation=InterpolationMode.BILINEAR),
-    T.RandomResizedCrop((H, W), scale=(.5,1.), ratio=(.3,2.)),
+    T.RandomChoice([
+      T.RandomAffine(degrees=0, translate=(.1,.25), interpolation=InterpolationMode.BILINEAR),
+      T.RandomResizedCrop((H, W), scale=(.5,1.), ratio=(.3,2.)),
+    ]),
   ],
   "sheep": [
     T.RandomHorizontalFlip(p=.5),
-    T.RandomResizedCrop((H, W), scale=(.3, 1.)),
-    T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
   ],
   "skunk": [
     T.RandomHorizontalFlip(p=.5),
