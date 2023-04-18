@@ -111,7 +111,7 @@ def plt_res(loss, acc, test_loss, test_acc, test_acc_pc, conf_mat, epochs, class
   fig.canvas.mpl_connect('pick_event', on_pick)
 
   weights = (recip := 1 / conf_mat.sum(0)) / sum(recip)
-  weighted_conf_mat = ((conf_mat * weights.repeat(7,1)) * 10).round().int()
+  weighted_conf_mat = ((conf_mat * weights.repeat(len(classes), 1)) * 10).round().int()
   mat.matshow(weighted_conf_mat, cmap='seismic')
   mat.set_xticks(range(len(classes)), classes, size='small')
   mat.set_yticks(range(len(classes)), classes, size='small')
