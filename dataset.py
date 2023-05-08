@@ -306,8 +306,9 @@ if __name__ == "__main__":
     clazzes = CLASSES
   ds = MultiSet()
   ds.df = ds.df[ds.df["class"].isin(clazzes)]
-  print(counts(ds, transl=True))
-  BS = 256
+  if int(os.getenv('DEBUG', 0)) > 0:
+    print(counts(ds, transl=True))
+  BS = min(len(ds), 256)
   dl = MultiSet.load(ds, weighted=True,
                      batch_size=BS, num_workers=0,
                      collate_fn=default_collate)
