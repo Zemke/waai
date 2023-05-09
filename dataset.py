@@ -29,7 +29,10 @@ TRANSFORMS = [
   T.ToTensor(),
   T.Normalize(std=STD, mean=MEAN),
 ]
-CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder", "skunk", "cow"]
+CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep",
+           "girder", "skunk", "cow", "cluster", "petrol",
+           "missile", "hhg", "pigeon"]
+
 
 
 AUG = {
@@ -95,6 +98,51 @@ AUG = {
   ],
   "cow": [
     T.RandomHorizontalFlip(p=.5),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  "cluster": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  "petrol": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  "missile": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  "hhg": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  "pigeon": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
     T.RandomChoice([
       T.RandomResizedCrop((H, W), scale=(.3, 1.)),
       T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
