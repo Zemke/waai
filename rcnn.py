@@ -28,7 +28,10 @@ device = torch.device(
 
 
 def create_net():
-  net = multinet.MultiNet(len(dataset.CLASSES))
+  if (bb_path := os.getenv("BACKBONE")):
+    net = multinet.pretrained(bb_path)
+  else:
+    net = multinet.MultiNet(len(dataset.CLASSES))
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features
