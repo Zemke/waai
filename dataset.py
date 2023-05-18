@@ -29,10 +29,12 @@ TRANSFORMS = [
   T.ToTensor(),
   T.Normalize(std=STD, mean=MEAN),
 ]
-CLASSES = ["bg", "dynamite", "mine", "barrel", "worm", "sheep",
-           "girder", "skunk", "cow", "cluster", "petrol",
-           "missile", "hhg", "pigeon"]
-
+CLASSES = [
+  "bg", "dynamite", "mine", "barrel", "worm", "sheep", "girder",
+  "skunk", "cow", "cluster", "petrol", "missile", "hhg", "pigeon",
+  "torch", 'bungee', 'chute', 'flamelets', 'jetpack', 'kami', 'rope',
+  'strike'
+]
 
 
 AUG = {
@@ -148,6 +150,55 @@ AUG = {
       T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
     ]),
   ],
+  "torch": [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'bungee': [
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'chute': [
+    T.RandomRotation(20, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'flamelets': [
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'jetpack': [
+    T.RandomHorizontalFlip(p=.5),
+  ],
+  'kami': [
+    T.RandomHorizontalFlip(p=.5),
+    T.RandomVerticalFlip(p=.5),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'rope': [
+    T.RandomRotation(180, interpolation=InterpolationMode.BILINEAR),
+    T.RandomChoice([
+      T.RandomResizedCrop((H, W), scale=(.3, 1.)),
+      T.RandomAffine(degrees=0, translate=(.3,.3), interpolation=InterpolationMode.BILINEAR),
+    ]),
+  ],
+  'strike': [
+    T.RandomHorizontalFlip(p=.5),
+  ]
 }
 
 for k in AUG.keys():
