@@ -20,7 +20,7 @@ import visual
 
 CACHE_FILE = './samples/.weighted_samples.pkl'
 
-STD, MEAN = (0.325, 0.301, 0.286), (0.397, 0.349, 0.288)
+STD, MEAN = (0.323, 0.289, 0.294), (0.373, 0.33, 0.333)
 C, W, H = 3, 30, 30
 
 TRANSFORMS = [
