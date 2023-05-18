@@ -21,8 +21,10 @@ import multinet
 import cropset
 import dataset
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"device is {device}")
+device = torch.device(
+  'cuda' if torch.cuda.is_available() else
+  'mps' if torch.backends.mps.is_available() else
+  'cpu') if os.getenv("GPU", False) == "1" else "cpu"
 
 
 def create_net():
