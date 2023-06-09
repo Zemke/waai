@@ -164,7 +164,7 @@ def write_createml(targ_name, y, thres):
 
 
 if __name__ == '__main__':
-  if len(sys.argv) <= 1:
+  if len(sys.argv) <= 1:  # train
     env_plotloss = os.getenv('PLOTLOSS') == '1'
     print("env_plotloss", env_plotloss)
     model = create_net()
@@ -184,37 +184,41 @@ if __name__ == '__main__':
     if not input().strip().lower().startswith('n'):
       torch.save(model.state_dict(), "./ubernet.pt")
       print('saved')
-
   else:
     pretr_path = sys.argv[1]
     if not os.path.exists(pretr_path) or not pretr_path.endswith('.pt'):
       print(pretr_path, 'does not exist or is not a valid model')
       sys.exit(1)
-
     model = pretrained(pretr_path)
-    paths = sys.argv[2:]
-    output_dir = None
-    if os.path.isdir(paths[0]):
-      output_dir = paths[0]
-      paths = paths[1:]
-      print("outputting to path", output_dir)
     thres = float(os.getenv('THRES', .8))
     print(f"threshold score is {thres}")
-    for path in (progr := tqdm(paths)):
-      if output_dir is not None:
-        assert os.path.exists(output_dir)
-        dest = os.path.join(output_dir, os.path.basename(path))
-        if not os.path.exists(dest):
-          progr.set_description(path[-20:])
+
+    if len(sys.argv) == 3:  # infer single
+      img = Image.open(sys.argv[2]).convert('RGB')
+      y = infer(img, model)
+      plot_infer(y, img, thres)
+    else:  # mass infer
+      paths = sys.argv[2:]
+      output_dir = None
+      if os.path.isdir(paths[0]):
+        output_dir = paths[0]
+        paths = paths[1:]
+        print("outputting to path", output_dir)
+      for path in (progr := tqdm(paths)):
+        if output_dir is not None:
+          assert os.path.exists(output_dir)
+          dest = os.path.join(output_dir, os.path.basename(path))
+          if not os.path.exists(dest):
+            progr.set_description(path[-20:])
+            img = Image.open(path).convert('RGB')
+            y = infer(img, model)
+            output_img(y, img, thres, dest)
+        elif len(paths) == 1 or os.getenv('PLOTINFER') == '1':
+          for p in paths:
+            print('f', p)
           img = Image.open(path).convert('RGB')
           y = infer(img, model)
-          output_img(y, img, thres, dest)
-      elif len(paths) == 1 or os.getenv('PLOTINFER') == '1':
-        for p in paths:
-          print('f', p)
-        img = Image.open(path).convert('RGB')
-        y = infer(img, model)
-        plot_infer(y, img, thres)
-        if os.getenv('CREATEML') == '1':
-          write_createml(path.split('/')[-1][:-4], y, thres)
+          plot_infer(y, img, thres)
+          if os.getenv('CREATEML') == '1':
+            write_createml(path.split('/')[-1][:-4], y, thres)
 
