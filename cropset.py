@@ -105,5 +105,6 @@ def collate_fn(batch):
 
 def load(dataset, batch_size=4, shuffle=True):
   return DataLoader(
-      dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn)
+      dataset, num_workers=2, persistent_workers=True,
+      batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn)
 
