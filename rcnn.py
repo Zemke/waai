@@ -174,7 +174,9 @@ if __name__ == '__main__':
     dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
-    model.load_state_dict(torch.load("./ubernet.pt", map_location=device))
+    if (pretr := os.getenv('PRETR')) != None:
+      print("loading pretrained model:", pretr)
+      model.load_state_dict(torch.load(pretr, map_location=device))
     losses = train(model)
 
     if env_plotloss:
