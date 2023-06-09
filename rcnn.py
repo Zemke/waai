@@ -65,6 +65,7 @@ def train(model):
   print(f'training {epochs} epochs')
 
   mlosses = []
+  mn_loss = None
   for epoch in trange(epochs, position=1):
     if (epoch+1) % 100 == 0:
       print("relax")
@@ -93,6 +94,10 @@ def train(model):
         mlosses.append(r_loss/divisor)
         progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f}")
         r_loss = 0.
+    if mn_loss is None or mlosses[-1] < mn_loss:
+      torch.save(model.state_dict(), "./ubernet.pt")
+      mn_loss = mlosses[-1]
+      print(f"ubernet.pt saved at epoch {epoch+1} and loss {mn_loss}")
 
   return mlosses
 
@@ -181,11 +186,6 @@ if __name__ == '__main__':
 
     if env_plotloss:
       plot_loss(losses)
-
-    print('save to ./ubernet.pt? [Y/n]', end=' ')
-    if not input().strip().lower().startswith('n'):
-      torch.save(model.state_dict(), "./ubernet.pt")
-      print('saved')
   else:
     pretr_path = sys.argv[1]
     if not os.path.exists(pretr_path) or not pretr_path.endswith('.pt'):
