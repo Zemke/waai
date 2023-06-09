@@ -48,8 +48,8 @@ def create_net():
 
 def pretrained(path):
   model = create_net()
-  model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
-  print(f'loaded model {path} into CPU')
+  model.load_state_dict(torch.load(path, map_location=torch.device(device)))
+  print(f'loaded model {path} into {device}')
   return model
 
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
-    #model.load_state_dict(torch.load("./ubernet_100.pt"))
+    model.load_state_dict(torch.load("./ubernet.pt", map_location=device))
     losses = train(model)
 
     if env_plotloss:
