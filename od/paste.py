@@ -74,8 +74,5 @@ bb = draw_bounding_boxes(
   #transed.to(torch.uint8),
   boxes,
   [L[l] for l in labels])
-import matplotlib.pyplot as plt
-assert len(labels) == len(boxes)
-plt.imshow(bb.permute((1,2,0)))
-plt.show()
+F.to_pil_image(bb).show()
 
