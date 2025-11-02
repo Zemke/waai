@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import os
 from os import listdir
 from os.path import isfile, join
 from random import randrange
@@ -10,6 +13,11 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
 from torchvision.transforms import v2
 import torchvision.transforms.functional as F
+
+from torchvision.ops import MultiScaleRoIAlign
+from torchvision.models.detection import FasterRCNN
+from torchvision.models.detection.rpn import AnchorGenerator
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 
 S = [30, 25, 40, 25]
@@ -32,14 +40,13 @@ class DynamicSet(Dataset):
     ])
 
   def __len__(self):
-    return len(len(M)*100)
+    return len(M)*100
 
   def __getitem__(self, idx):
     im1 = M[randrange(len(M))]
     wi = 0
     SP = 45
     height, width, _ = np.array(im1).shape
-    print( np.array(im1).shape)
     im1 = im1.convert("RGBA")
     back_im = im1.copy().convert("RGBA")
     boxes, labels = [], []
@@ -54,13 +61,14 @@ class DynamicSet(Dataset):
         labels.append(t)
         boxes.append([x1, y1, x1+S[t], y1+S[t]])
     back_im = back_im.convert("RGB")
-    back_im.show()
+    #back_im.show()
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
 
+"""
 transed, bl = DynamicSet()[1]
 
 # show with bounding boxes
@@ -72,4 +80,53 @@ bb = draw_bounding_boxes(
   boxes,
   [L[l] for l in labels])
 F.to_pil_image(bb).show()
+"""
+
+
+from torchvision.models.detection import fasterrcnn_mobilenet_v3_large_320_fpn
+
+if __name__ == '__main__':
+  #model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.DEFAULT)
+  model = fasterrcnn_mobilenet_v3_large_320_fpn(num_classes=len(L)+1)
+
+  anchor_generator = AnchorGenerator(sizes=((10,30,40,),), aspect_ratios=((1.,.5,),))
+  roi_pooler = MultiScaleRoIAlign(featmap_names=['0'], output_size=15, sampling_ratio=1)
+
+  model = fasterrcnn_mobilenet_v3_large_320_fpn(
+    num_classes=len(L)+1,
+    image_mean=(.5,.5,.5), image_std=(.5,.5,.5),  # TODO
+    min_size=640, max_size=1920,
+    #rpn_anchor_generator=anchor_generator,
+    box_roi_pool=roi_pooler)
+
+  def collate_fn(batch):
+    return tuple(zip(*batch))
+
+  dl = DataLoader(
+    DynamicSet(),
+    #num_workers=4, persistent_workers=True,
+    batch_size=4, collate_fn=collate_fn)
+
+  params = [p for p in model.parameters() if p.requires_grad]
+  optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
+
+  device = 'cpu'
+  model.to(device)
+  model.train()
+
+  epochs = int(os.getenv('EPOCHS', 200))
+  print(f'training {epochs} epochs')
+
+  for epoch in range(epochs):
+    for i, (img, l) in enumerate(dl):
+      img = list(i.to(device) for i in img)
+      l = [{k: v.to(device) for k, v in t.items()} for t in l]
+
+      loss_dict = model(img, l)
+      losses = sum(loss for loss in loss_dict.values())
+      optimizer.zero_grad()
+      losses.backward()
+      optimizer.step()
+
+      print(losses.item())
 
