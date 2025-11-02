@@ -11,15 +11,16 @@ import torchvision.transforms as T
 from torchvision.transforms import v2
 import torchvision.transforms.functional as F
 
-M = ['target/' + f for f in listdir("target") if isfile(join("target", f)) and f.split(".")[-1] == "png"]
-W = ['worms/' + f for f in listdir("worms") if isfile(join("worms", f)) and f.split(".")[-1] == "png"]
-C = [
+
+S = [30, 25, 40, 25]
+L = ['worm', 'mine', 'barrel', 'dynamite']
+M = [Image.open('target/' + f).convert("RGBA") for f in listdir("target") if isfile(join("target", f)) and f.split(".")[-1] == "png"]
+W = [Image.open(c).convert("RGBA").resize((S[0], S[0])) for c in ['worms/' + f for f in listdir("worms") if isfile(join("worms", f)) and f.split(".")[-1] == "png"]]
+C = [Image.open(c).convert("RGBA").resize((S[t+1], S[t+1])) for t,c in enumerate([
   "weapons_alpha/mine.png",
   "weapons_alpha/barrel.png",
   "weapons_alpha/dynamite.png",
-]
-S = [30, 25, 40, 25]
-L = ['worm', 'mine', 'barrel', 'dynamite']
+])]
 
 class DynamicSet(Dataset):
   def __init__(self):
@@ -30,7 +31,7 @@ class DynamicSet(Dataset):
     return len(100_000)
 
   def __getitem__(self, idx):
-    im1 = Image.open(M[randrange(len(M))]).convert("RGBA")
+    im1 = M[randrange(len(M))]
     wi = 0
     SP = 45
     height, width, _ = np.array(im1).shape
@@ -42,7 +43,7 @@ class DynamicSet(Dataset):
       for x in range(SP-30, width-SP, SP):
         a = Image.new("RGBA", back_im.size, (0,0,0,0))
         c = W[randrange(len(W))] if (t := randrange(4)) == 0 else C[t-1]
-        im2 = Image.open(c).convert("RGBA").resize((S[t], S[t]))
+        im2 = c
         wi += 1
         a.paste(im2, (x1 := x+randrange(10), y1 := y+randrange(10)))
         back_im = Image.alpha_composite(back_im, a)
