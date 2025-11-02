@@ -19,6 +19,8 @@ from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
+from collate import collate_fn
+
 
 S = [30, 25, 40, 25]
 L = ['worm', 'mine', 'barrel', 'dynamite']
@@ -99,13 +101,13 @@ if __name__ == '__main__':
     #rpn_anchor_generator=anchor_generator,
     box_roi_pool=roi_pooler)
 
-  def collate_fn(batch):
-    return tuple(zip(*batch))
+  #def collate_fn(batch):
+  #  return tuple(zip(*batch))
 
   dl = DataLoader(
     DynamicSet(),
-    #num_workers=4, persistent_workers=True,
-    batch_size=4, collate_fn=collate_fn)
+    num_workers=4, persistent_workers=True,
+    batch_size=8, collate_fn=collate_fn)
 
   params = [p for p in model.parameters() if p.requires_grad]
   optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
