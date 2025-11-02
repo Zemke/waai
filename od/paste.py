@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
+from torchvision.transforms import v2
 import torchvision.transforms.functional as F
 
 M = ['target/' + f for f in listdir("target") if isfile(join("target", f)) and f.split(".")[-1] == "png"]
@@ -52,7 +53,9 @@ class DynamicSet(Dataset):
     return \
       T.Compose([
         T.PILToTensor(),
-        #T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # TODO
+        v2.ToDtype(torch.float32, scale=True),
+        # no norm in rcnn
+        #T.Normalize(torch.tensor([0.8580, 0.4778, 0.2055]), torch.tensor([0.8040, 0.4523, 0.2539]))
       ])(back_im), \
       {
         "boxes": torch.as_tensor(boxes, dtype=torch.float),
@@ -67,6 +70,7 @@ labels = bl["labels"]
 from torchvision.utils import draw_bounding_boxes
 bb = draw_bounding_boxes(
   (transed*255).to(torch.uint8),
+  #transed.to(torch.uint8),
   boxes,
   [L[l] for l in labels])
 import matplotlib.pyplot as plt
