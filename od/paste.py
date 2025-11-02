@@ -24,11 +24,15 @@ C = [Image.open(c).convert("RGBA").resize((S[t+1], S[t+1])) for t,c in enumerate
 
 class DynamicSet(Dataset):
   def __init__(self):
-    #self.transform = T.Compose([T.ToTensor()])
-    pass
+    self.transform = T.Compose([
+      T.PILToTensor(),
+      v2.ToDtype(torch.float32, scale=True),
+      # no norm in rcnn
+      #T.Normalize(torch.tensor([0.8580, 0.4778, 0.2055]), torch.tensor([0.8040, 0.4523, 0.2539]))
+    ])
 
   def __len__(self):
-    return len(100_000)
+    return len(len(M)*100)
 
   def __getitem__(self, idx):
     im1 = M[randrange(len(M))]
@@ -51,27 +55,20 @@ class DynamicSet(Dataset):
         boxes.append([x1, y1, x1+S[t], y1+S[t]])
     back_im = back_im.convert("RGB")
     back_im.show()
-    return \
-      T.Compose([
-        T.PILToTensor(),
-        v2.ToDtype(torch.float32, scale=True),
-        # no norm in rcnn
-        #T.Normalize(torch.tensor([0.8580, 0.4778, 0.2055]), torch.tensor([0.8040, 0.4523, 0.2539]))
-      ])(back_im), \
-      {
-        "boxes": torch.as_tensor(boxes, dtype=torch.float),
-        "labels": torch.as_tensor(labels, dtype=torch.int64),
-      }
+    return self.transform(back_im), {
+      "boxes": torch.as_tensor(boxes, dtype=torch.float),
+      "labels": torch.as_tensor(labels, dtype=torch.int64),
+    }
 
 
 transed, bl = DynamicSet()[1]
+
+# show with bounding boxes
 boxes = bl["boxes"]
 labels = bl["labels"]
-# show with bounding boxes
 from torchvision.utils import draw_bounding_boxes
 bb = draw_bounding_boxes(
   (transed*255).to(torch.uint8),
-  #transed.to(torch.uint8),
   boxes,
   [L[l] for l in labels])
 F.to_pil_image(bb).show()
