@@ -50,20 +50,19 @@ class DynamicSet(Dataset):
     SP = 45
     height, width, _ = np.array(im1).shape
     im1 = im1.convert("RGBA")
-    back_im = im1.copy().convert("RGBA")
+    back_im = im1.copy()
+    a = Image.new("RGBA", back_im.size, (0,0,0,0))
     boxes, labels = [], []
     for y in range(SP-30, height-SP, SP):
       for x in range(SP-30, width-SP, SP):
-        a = Image.new("RGBA", back_im.size, (0,0,0,0))
-        c = W[randrange(len(W))] if (t := randrange(4)) == 0 else C[t-1]
-        im2 = c
+        im2 = W[randrange(len(W))] if (t := randrange(4)) == 0 else C[t-1]
         wi += 1
         a.paste(im2, (x1 := x+randrange(10), y1 := y+randrange(10)))
-        back_im = Image.alpha_composite(back_im, a)
         labels.append(t)
         boxes.append([x1, y1, x1+S[t], y1+S[t]])
-    back_im = back_im.convert("RGB")
-    #back_im.show()
+    back_im = Image.alpha_composite(back_im, a)
+    back_im = back_im
+    back_im.show()
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
