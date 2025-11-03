@@ -45,12 +45,10 @@ class DynamicSet(Dataset):
     return len(M)*100
 
   def __getitem__(self, idx):
-    im1 = M[randrange(len(M))]
+    back_im = M[randrange(len(M))].copy()
     wi = 0
     SP = 45
-    height, width, _ = np.array(im1).shape
-    im1 = im1.convert("RGBA")
-    back_im = im1.copy()
+    height, width, _ = np.array(back_im).shape
     a = Image.new("RGBA", back_im.size, (0,0,0,0))
     boxes, labels = [], []
     for y in range(SP-30, height-SP, SP):
@@ -60,9 +58,7 @@ class DynamicSet(Dataset):
         a.paste(im2, (x1 := x+randrange(10), y1 := y+randrange(10)))
         labels.append(t)
         boxes.append([x1, y1, x1+S[t], y1+S[t]])
-    back_im = Image.alpha_composite(back_im, a)
-    back_im = back_im
-    back_im.show()
+    back_im = Image.alpha_composite(back_im, a).convert("RGB")
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
