@@ -86,15 +86,7 @@ from torchvision.models.detection import fasterrcnn_mobilenet_v3_large_320_fpn
 def infer(img, model):
   with torch.no_grad():
     model.eval()
-    to = T.Compose([
-          T.PILToTensor(),
-          v2.ToDtype(torch.float32, scale=True),
-          # no norm in rcnn
-          #T.Normalize(torch.tensor([0.8580, 0.4778, 0.2055]), torch.tensor([0.8040, 0.4523, 0.2539]))
-        ])(img)
-
-    return model(to.unsqueeze(0))[0]
-    #return model(F.to_tensor(img).unsqueeze(0))[0]
+    return model(F.to_tensor(img).unsqueeze(0))[0]
 
 
 def draw_bb(y, img, thres):
@@ -116,7 +108,6 @@ if __name__ == '__main__':
   device = os.getenv('GPU', 'cpu')
   print(device)
 
-
   anchor_generator = AnchorGenerator(sizes=((10,30,40,),), aspect_ratios=((1.,.5,),))
   roi_pooler = MultiScaleRoIAlign(featmap_names=['0'], output_size=15, sampling_ratio=1)
 
@@ -127,47 +118,41 @@ if __name__ == '__main__':
     #rpn_anchor_generator=anchor_generator,
     box_roi_pool=roi_pooler)
 
-  if True:  # TODO infer
-    path = sys.argv[1]
-    print('path', path)
+  if sys.argv[1] == 'infer':
+    path = sys.argv[2]
     img = Image.open(path).convert('RGB')
-    print(np.array(img).shape)
     model.load_state_dict(torch.load("./dynamicnet.pt", map_location=torch.device(device)))
     y = infer(img, model)
     thres = float(os.getenv('THRES', .8))
     output_img(y, img, thres, 'dest/res.png')
-    assert False  # TODO infer
+  elif sys.argv[1] == 'test':
+    print('batch size ' + str(batch_size := int(os.getenv('BATCH', 4))))
+    dl = DataLoader(
+      DynamicSet(),
+      #num_workers=4, persistent_workers=True,
+      batch_size=batch_size, collate_fn=collate_fn)
 
-  #def collate_fn(batch):
-  #  return tuple(zip(*batch))
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=.008, momentum=0.9, weight_decay=0.0005)
 
-  print('batch size ' + str(batch_size := int(os.getenv('BATCH', 4))))
-  dl = DataLoader(
-    DynamicSet(),
-    #num_workers=4, persistent_workers=True,
-    batch_size=batch_size, collate_fn=collate_fn)
+    model.to(device)
+    model.train()
 
-  params = [p for p in model.parameters() if p.requires_grad]
-  optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
+    epochs = int(os.getenv('EPOCHS', 200))
+    print(f'training {epochs} epochs')
 
-  model.to(device)
-  model.train()
+    for epoch in range(epochs):
+      for i, (img, l) in enumerate(dl):
+        img = torch.stack(img).to(device)
+        l = [{k: v.to(device) for k, v in t.items()} for t in l]
 
-  epochs = int(os.getenv('EPOCHS', 200))
-  print(f'training {epochs} epochs')
+        loss_dict = model(img, l)
+        losses = sum(loss for loss in loss_dict.values())
+        optimizer.zero_grad()
+        losses.backward()
+        optimizer.step()
 
-  for epoch in range(epochs):
-    for i, (img, l) in enumerate(dl):
-      img = torch.stack(img).to(device)
-      l = [{k: v.to(device) for k, v in t.items()} for t in l]
+        print(losses.item())
 
-      loss_dict = model(img, l)
-      losses = sum(loss for loss in loss_dict.values())
-      optimizer.zero_grad()
-      losses.backward()
-      optimizer.step()
-
-      print(losses.item())
-
-      torch.save(model.state_dict(), "./dynamicnet.pt")
+        torch.save(model.state_dict(), "./dynamicnet.pt")
 
