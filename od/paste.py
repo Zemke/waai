@@ -60,7 +60,7 @@ class DynamicSet(Dataset):
         boxes.append([x1, y1, x1+S[t], y1+S[t]])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
     return self.transform(back_im), {
-      "boxes": torch.as_tensor(boxes, dtype=torch.float),
+      "boxes": torch.as_tensor(boxes, dtype=torch.float32),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
@@ -99,15 +99,17 @@ if __name__ == '__main__':
   #def collate_fn(batch):
   #  return tuple(zip(*batch))
 
+  print('batch size ' + str(batch_size := int(os.getenv('BATCH', 4))))
   dl = DataLoader(
     DynamicSet(),
-    num_workers=4, persistent_workers=True,
-    batch_size=8, collate_fn=collate_fn)
+    #num_workers=4, persistent_workers=True,
+    batch_size=batch_size, collate_fn=collate_fn)
 
   params = [p for p in model.parameters() if p.requires_grad]
   optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
 
-  device = 'cpu'
+  device = os.getenv('GPU', 'cpu')
+  print(device)
   model.to(device)
   model.train()
 
@@ -116,7 +118,7 @@ if __name__ == '__main__':
 
   for epoch in range(epochs):
     for i, (img, l) in enumerate(dl):
-      img = list(i.to(device) for i in img)
+      img = torch.stack(img).to(device)
       l = [{k: v.to(device) for k, v in t.items()} for t in l]
 
       loss_dict = model(img, l)
@@ -126,4 +128,6 @@ if __name__ == '__main__':
       optimizer.step()
 
       print(losses.item())
+
+      torch.save(model.state_dict(), "./dynamicnet.pt")
 
