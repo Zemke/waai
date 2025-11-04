@@ -125,7 +125,7 @@ if __name__ == '__main__':
     y = infer(img, model)
     thres = float(os.getenv('THRES', .8))
     output_img(y, img, thres, 'dest/res.png')
-  elif sys.argv[1] == 'test':
+  elif sys.argv[1] == 'train':
     print('batch size ' + str(batch_size := int(os.getenv('BATCH', 4))))
     dl = DataLoader(
       DynamicSet(),
