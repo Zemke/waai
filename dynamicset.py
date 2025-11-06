@@ -27,7 +27,7 @@ class DynamicSet(Dataset):
       #T.Normalize(torch.tensor([0.8580, 0.4778, 0.2055]), torch.tensor([0.8040, 0.4523, 0.2539]))
     ])
     self.S = [30, 25, 40, 25]
-    self.M = [Image.open('od/target/' + f).convert("RGBA") for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
+    self.M = [f for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
     self.W = [Image.open(c).convert("RGBA").resize((self.S[0], self.S[0])) for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]]
     self.C = [Image.open(c).convert("RGBA").resize((self.S[t+1], self.S[t+1])) for t,c in enumerate([
       "od/weapons_alpha/mine.png",
@@ -39,7 +39,7 @@ class DynamicSet(Dataset):
     return self.length
 
   def __getitem__(self, idx):
-    back_im = self.M[randrange(len(self.M))].copy()
+    back_im = Image.open("od/target/" + self.M[randrange(len(self.M))]).convert("RGBA")
     wi = 0
     SP = 45
     height, width, _ = np.array(back_im).shape
