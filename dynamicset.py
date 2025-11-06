@@ -6,20 +6,13 @@ from os import listdir
 from os.path import isfile, join
 from random import randrange
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageFilter
 import numpy as np
 
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
 from torchvision.transforms import v2
-import torchvision.transforms.functional as F
-
-from torchvision.ops import MultiScaleRoIAlign
-from torchvision.models.detection import FasterRCNN
-from torchvision.models.detection.rpn import AnchorGenerator
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.utils import draw_bounding_boxes
 
 CLASSES = ['worm', 'mine', 'barrel', 'dynamite']
 STD, MEAN = (.5, .5, .5), (.5, .5, .5)  # TODO
