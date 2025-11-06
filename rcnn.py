@@ -185,7 +185,7 @@ if __name__ == '__main__':
     batch_size = int(os.getenv('BATCH', 4))
     print(f"batch_size is {batch_size}")
     if use_dynamicset:
-      dl = dataset.DynamicSet.load(dataset.DynamicSet(1_000), batch_size=batch_size)
+      dl = dataset.load(dataset.DynamicSet(100), batch_size=batch_size)
     else:
       dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))

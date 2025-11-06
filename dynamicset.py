@@ -65,14 +65,13 @@ class DynamicSet(Dataset):
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
-  @staticmethod
-  def collate_fn(batch):
-    return tuple(zip(*batch))
 
-  @staticmethod
-  def load(dataset, batch_size):
-    return DataLoader(
-      dataset,
-      #num_workers=4, persistent_workers=True,
-      batch_size=batch_size, collate_fn=DynamicSet.collate_fn)
+def collate_fn(batch):
+  return tuple(zip(*batch))
+
+def load(dataset, batch_size):
+  return DataLoader(
+    dataset,
+    num_workers=2, persistent_workers=True,
+    batch_size=batch_size, collate_fn=collate_fn)
 
