@@ -68,3 +68,18 @@ def load(dataset, batch_size):
     num_workers=2, persistent_workers=True,
     batch_size=batch_size, collate_fn=collate_fn)
 
+
+if __name__ == "__main__":
+  from torchvision.utils import draw_bounding_boxes
+  import torchvision.transforms.functional as F
+
+  transed, bl = DynamicSet(1)[1]
+  # show with bounding boxes
+  boxes = bl["boxes"]
+  labels = bl["labels"]
+  bb = draw_bounding_boxes(
+    (transed*255).to(torch.uint8),
+    boxes,
+    [CLASSES[l] for l in labels])
+  F.to_pil_image(bb).show()
+
