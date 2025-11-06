@@ -94,7 +94,7 @@ class CropSet(Dataset):
     #plt.imshow(bb.permute((1,2,0)))
     #plt.show()
     return transed, {
-      "boxes": torch.as_tensor(boxes, dtype=torch.float),
+      "boxes": torch.as_tensor(boxes, dtype=torch.float32),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 

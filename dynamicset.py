@@ -61,7 +61,7 @@ class DynamicSet(Dataset):
         boxes.append([x1, y1, x1+self.S[t], y1+self.S[t]])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
     return self.transform(back_im), {
-      "boxes": torch.as_tensor(boxes, dtype=torch.float32),
+      "boxes": torch.as_tensor(boxes, dtype=torch.float16),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
