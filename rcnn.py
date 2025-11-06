@@ -19,7 +19,15 @@ from tqdm import trange, tqdm
 
 import multinet
 import cropset
-import dataset
+
+use_dynamicset = False
+if os.getenv("DYNAMICSET", False) == "1":
+  import dynamicset as dataset
+  use_dynamicset = True
+else:
+  import dataset as dataset
+print('use_dynamicset', use_dynamicset)
+
 
 device = torch.device(
   'cuda' if torch.cuda.is_available() else
@@ -176,7 +184,10 @@ if __name__ == '__main__':
 
     batch_size = int(os.getenv('BATCH', 4))
     print(f"batch_size is {batch_size}")
-    dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
+    if use_dynamicset:
+      dl = dataset.DynamicSet.load(dataset.DynamicSet(1_000), batch_size=batch_size)
+    else:
+      dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))
 
     if (pretr := os.getenv('PRETR')) != None:
