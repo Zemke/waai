@@ -47,7 +47,7 @@ class DynamicSet(Dataset):
     boxes, labels = [], []
     for y in range(SP-30, height-SP, SP):
       for x in range(SP-30, width-SP, SP):
-        im2 = self.W[randrange(len(self.W))] if (t := randrange(4)) == 0 else self.C[t-1]
+        im2 = self.W[randrange(len(self.W))] if (t := randrange(len(CLASSES))) == 0 else self.C[t-1]
         wi += 1
         a.paste(im2, (x1 := x+randrange(10), y1 := y+randrange(10)))
         labels.append(t)
@@ -77,9 +77,7 @@ if __name__ == "__main__":
   # show with bounding boxes
   boxes = bl["boxes"]
   labels = bl["labels"]
-  bb = draw_bounding_boxes(
-    (transed*255).to(torch.uint8),
-    boxes,
-    [CLASSES[l] for l in labels])
+  denorm = (transed*255).to(torch.uint8)
+  bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
   F.to_pil_image(bb).show()
 
