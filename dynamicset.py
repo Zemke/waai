@@ -16,7 +16,7 @@ from torchvision.transforms import v2
 
 import norm
 
-CLASSES = ['worm', 'mine', 'barrel', 'dynamite']
+CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
 STD, MEAN = (0.296, 0.235, 0.165), (0.195, 0.143, 0.072)
 
 class DynamicSet(Dataset):
@@ -44,6 +44,10 @@ class DynamicSet(Dataset):
       v2.ToPILImage(),
     ])
 
+  def _get_img(self):
+    c = randrange(len(CLASSES)-1) + 1
+    return self.W[randrange(len(self.W))] if c == 1 else self.C[c-2], c
+
   def __len__(self):
     return self.length
 
@@ -55,8 +59,7 @@ class DynamicSet(Dataset):
     SP, RND = 100, 50
     for y in range(0, height, SP):
       for x in range(0, width, SP):
-        c = randrange(len(CLASSES))
-        im2 = self.W[randrange(len(self.W))] if c == 0 else self.C[c-1]
+        im2, c = self._get_img()
         im2 = self.transform_paste(im2)
         x1 = x + randrange(RND)
         y1 = y + randrange(RND)
@@ -86,8 +89,7 @@ class DynamicSetPaste(DynamicSet):
     ])
 
   def __getitem__(self, idx):
-    c = randrange(len(CLASSES))
-    im2 = self.W[randrange(len(self.W))] if c == 0 else self.C[c-1]
+    im2, c = self._get_img()
     return \
       self.transform(im2.convert("RGB")), \
       torch.as_tensor(c, dtype=torch.int64)

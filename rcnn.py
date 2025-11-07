@@ -43,6 +43,7 @@ def create_net():
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features
+  print('num_classes', num_classes)
 
   anchor_generator = AnchorGenerator(sizes=((10,30,40,),), aspect_ratios=((1.,.5,),))
   roi_pooler = MultiScaleRoIAlign(featmap_names=['0'], output_size=15, sampling_ratio=1)
