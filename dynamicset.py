@@ -38,6 +38,8 @@ class DynamicSet(Dataset):
       v2.RandomHorizontalFlip(p=.5),
       v2.RandomRotation(360),
       v2.RandomResize(15, 50),
+      v2.RandomApply([v2.RandomPosterize(2)]),
+      v2.RandomApply([v2.GaussianBlur(13)]),
       v2.ToPILImage(),
     ])
 
