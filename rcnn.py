@@ -87,6 +87,8 @@ def train(model):
       l = [{k: v.to(device) for k, v in t.items()} for t in l]
 
       loss_dict = model(img, l)
+      print(epoch, loss_dict);
+      sys.stdout.flush()
       losses = sum(loss for loss in loss_dict.values())
       optimizer.zero_grad()
       losses.backward()
