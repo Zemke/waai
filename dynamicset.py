@@ -48,18 +48,26 @@ class DynamicSet(Dataset):
 
   def __getitem__(self, idx):
     back_im = Image.open("od/target/" + self.M[randrange(len(self.M))]).convert("RGBA")
-    SP = 120
-    height, width, _ = np.array(back_im).shape
     a = Image.new("RGBA", back_im.size, (0,0,0,0))
     boxes, labels = [], []
-    for y in range(SP-30, height-SP, SP):
-      for x in range(SP-30, width-SP, SP):
-        im2 = self.W[randrange(len(self.W))] if (t := randrange(len(CLASSES))) == 0 else self.C[t-1]
+    height, width, _ = np.array(back_im).shape
+    SP, RND = 100, 50
+    for y in range(0, height, SP):
+      for x in range(0, width, SP):
+        c = randrange(len(CLASSES))
+        im2 = self.W[randrange(len(self.W))] if c == 0 else self.C[c-1]
         im2 = self.transform_paste(im2)
-        a.paste(im2, (x1 := x+randrange(10), y1 := y+randrange(10)))
-        labels.append(t)
-        boxes.append([x1, y1, x1+im2.width, y1+im2.height])
+        x1 = x + randrange(RND)
+        y1 = y + randrange(RND)
+        x2 = x1 + im2.width
+        y2 = y1 + im2.height
+        if x2 > width or y2 > height:
+          continue
+        a.paste(im2, (x1, y1))
+        labels.append(c)
+        boxes.append([x1, y1, x2, y2])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
+    print(len(labels))
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),

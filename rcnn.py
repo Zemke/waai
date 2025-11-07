@@ -51,7 +51,8 @@ def create_net():
     backbone, num_classes=num_classes,
     image_mean=dataset.MEAN, image_std=dataset.STD,
     min_size=640, max_size=1920,
-    rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler)
+    rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler,
+    box_detections_per_img=200)
 
 
 def pretrained(path):
