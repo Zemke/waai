@@ -14,8 +14,10 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
 from torchvision.transforms import v2
 
+import norm
+
 CLASSES = ['worm', 'mine', 'barrel', 'dynamite']
-STD, MEAN = (.5, .5, .5), (.5, .5, .5)  # TODO
+STD, MEAN = (0.296, 0.235, 0.165), (0.195, 0.143, 0.072)
 
 class DynamicSet(Dataset):
   def __init__(self, length):
@@ -24,7 +26,6 @@ class DynamicSet(Dataset):
       T.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
     ])
-    self.S = [30, 25, 40, 25]
     self.M = [f for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
     self.W = [Image.open(c).convert("RGBA") for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]]
     self.C = [Image.open(c).convert("RGBA") for t,c in enumerate([
@@ -36,7 +37,7 @@ class DynamicSet(Dataset):
       T.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
       v2.RandomHorizontalFlip(p=.5),
-      v2.RandomRotation(360),
+      v2.RandomRotation(180),
       v2.RandomResize(15, 50),
       v2.RandomApply([v2.RandomPosterize(2)]),
       v2.RandomApply([v2.GaussianBlur(13)]),
@@ -65,17 +66,32 @@ class DynamicSet(Dataset):
           continue
         a.paste(im2, (x1, y1))
         labels.append(c)
-        boxes.append([x1, y1, x2, y2])
+        boxes.append(z := [x1, y1, x2, y2])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
-    print(len(labels))
+    #print(len(labels))
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
-# TODO random paste
-# TODO transforms
-# TODO normalize
+class DynamicSetPaste(DynamicSet):
+  def __init__(self, length):
+    super().__init__(length)
+    self.HW = 30, 30
+    self.transform = T.Compose([
+      *self.transform_paste.transforms,
+      v2.PILToTensor(),
+      v2.Resize((self.HW[0],self.HW[1])),
+      v2.ToDtype(torch.float, scale=True),
+    ])
+
+  def __getitem__(self, idx):
+    c = randrange(len(CLASSES))
+    im2 = self.W[randrange(len(self.W))] if c == 0 else self.C[c-1]
+    return \
+      self.transform(im2.convert("RGB")), \
+      torch.as_tensor(c, dtype=torch.int64)
+
 
 def collate_fn(batch):
   return tuple(zip(*batch))
@@ -88,14 +104,19 @@ def load(dataset, batch_size):
 
 
 if __name__ == "__main__":
-  from torchvision.utils import draw_bounding_boxes
-  import torchvision.transforms.functional as F
+  if sys.argv[1] == 'norm':
+    batch_size = 10_000
+    dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
+    norm.exec(ds, dl, ds.HW)
+  else:
+    from torchvision.utils import draw_bounding_boxes
+    import torchvision.transforms.functional as F
 
-  transed, bl = DynamicSet(1)[1]
-  # show with bounding boxes
-  boxes = bl["boxes"]
-  labels = bl["labels"]
-  denorm = (transed*255).to(torch.uint8)
-  bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
-  F.to_pil_image(bb).show()
+    transed, bl = DynamicSet(1)[1]
+    # show with bounding boxes
+    boxes = bl["boxes"]
+    labels = bl["labels"]
+    denorm = (transed*255).to(torch.uint8)
+    bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
+    F.to_pil_image(bb).show()
 
