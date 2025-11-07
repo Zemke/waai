@@ -108,7 +108,7 @@ if __name__ == "__main__":
     batch_size = 10_000
     dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
     norm.exec(ds, dl, ds.HW)
-  else:
+  elif sys.argv[1] == "big":
     from torchvision.utils import draw_bounding_boxes
     import torchvision.transforms.functional as F
 
@@ -119,4 +119,12 @@ if __name__ == "__main__":
     denorm = (transed*255).to(torch.uint8)
     bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
     F.to_pil_image(bb).show()
+  elif sys.argv[1] == "smol":
+    from torchvision.utils import make_grid
+    import torchvision.transforms.functional as F
+    from math import sqrt
+    batch_size = 256
+    dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
+    x = F.normalize(next(iter(dl))[0], MEAN, STD)
+    F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
 
