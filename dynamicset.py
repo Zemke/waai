@@ -41,7 +41,7 @@ CLASSES_WEAPONS = [
 CLASSES_OTHER = ['bg', 'worm']
 CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
 
-STD, MEAN = (0.329, 0.288, 0.309), (0.262, 0.216, 0.208)
+STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)
 
 class DynamicSet(Dataset):
   def __init__(self, length):
