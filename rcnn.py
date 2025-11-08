@@ -20,6 +20,8 @@ from tqdm import trange, tqdm
 import multinet
 import cropset
 
+enable_progr = os.getenv("PROGR", True) != "0"
+
 use_dynamicset = False
 if os.getenv("DYNAMICSET", False) == "1":
   import dynamicset as dataset
@@ -76,13 +78,13 @@ def train(model):
 
   mlosses = []
   mn_loss = None
-  for epoch in trange(epochs, position=1):
+  for epoch in trange(epochs, position=1, disable=enable_progr):
     if (epoch+1) % 100 == 0:
       print("relax")
       sleep(10)  # GPU relaxation time
 
     r_loss = 0.
-    for i, (img, l) in enumerate((progr := tqdm(dl, position=0))):
+    for i, (img, l) in enumerate((progr := tqdm(dl, position=0, disable=enable_progr))):
       img = list(i.to(device) for i in img)
       l = [{k: v.to(device) for k, v in t.items()} for t in l]
 
