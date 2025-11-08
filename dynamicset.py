@@ -60,7 +60,7 @@ class DynamicSet(Dataset):
       v2.ToDtype(torch.float32, scale=True),
       v2.Resize(60),
       v2.CenterCrop(50),
-      v2.RandomResizedCrop(50, scale=(.6, 1.)),
+      v2.RandomResizedCrop(50, scale=(.4, 1.)),
       v2.RandomResize(20, 50),
       v2.RandomHorizontalFlip(p=.5),
       v2.RandomApply([v2.RandomPosterize(2)]),
@@ -96,7 +96,6 @@ class DynamicSet(Dataset):
         labels.append(c)
         boxes.append(z := [x1, y1, x2, y2])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
-    #print(len(labels))
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
       "labels": torch.as_tensor(labels, dtype=torch.int64),
@@ -142,9 +141,7 @@ if __name__ == "__main__":
   elif sys.argv[1] == "big":
     from torchvision.utils import draw_bounding_boxes
     import torchvision.transforms.functional as F
-
     transed, bl = DynamicSet(1)[1]
-    # show with bounding boxes
     boxes = bl["boxes"]
     labels = bl["labels"]
     denorm = (transed*255).to(torch.uint8)
