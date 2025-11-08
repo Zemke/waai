@@ -16,7 +16,31 @@ from torchvision.transforms import v2
 
 import norm
 
-CLASSES = ['bg', 'worm', 'mine', 'barrel', 'dynamite']
+CLASSES_WEAPONS = [
+  "mine",
+  "barrel",
+  "dynamite",
+  "grenade",
+  "hhg",
+  "missile",
+  "pigeon",
+  "jetpack",
+  "cow",
+  "mole",
+  "oldwoman",
+  "chute",
+  "petrol",
+  "drill",
+  "select",
+  "sheep",
+  "skunk",
+  "surrender",
+  "teleport",
+  "airstrike",
+]
+CLASSES_OTHER = ['bg', 'worm']
+CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
+
 STD, MEAN = (0.296, 0.235, 0.165), (0.195, 0.143, 0.072)
 
 class DynamicSet(Dataset):
@@ -29,9 +53,7 @@ class DynamicSet(Dataset):
     self.M = [f for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
     self.W = [Image.open(c).convert("RGBA") for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]]
     self.C = [Image.open(c).convert("RGBA") for t,c in enumerate([
-      "od/weapons_alpha/mine.png",
-      "od/weapons_alpha/barrel.png",
-      "od/weapons_alpha/dynamite.png",
+      f"od/weapons_alpha/{w}.png" for w in CLASSES_WEAPONS
     ])]
     self.transform_paste = T.Compose([
       T.PILToTensor(),
@@ -46,7 +68,7 @@ class DynamicSet(Dataset):
 
   def _get_img(self):
     c = randrange(len(CLASSES)-1) + 1
-    return self.W[randrange(len(self.W))] if c == 1 else self.C[c-2], c
+    return self.W[randrange(len(self.W))] if c == 1 else self.C[c-len(CLASSES_OTHER)], c
 
   def __len__(self):
     return self.length
