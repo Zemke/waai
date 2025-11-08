@@ -78,13 +78,13 @@ def train(model):
 
   mlosses = []
   mn_loss = None
-  for epoch in trange(epochs, position=1, disable=enable_progr):
+  for epoch in trange(epochs, position=1, disable=not enable_progr):
     if (epoch+1) % 100 == 0:
       print("relax")
       sleep(10)  # GPU relaxation time
 
     r_loss = 0.
-    for i, (img, l) in enumerate((progr := tqdm(dl, position=0, disable=enable_progr))):
+    for i, (img, l) in enumerate((progr := tqdm(dl, position=0, disable=not enable_progr))):
       img = list(i.to(device) for i in img)
       l = [{k: v.to(device) for k, v in t.items()} for t in l]
 
