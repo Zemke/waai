@@ -189,9 +189,17 @@ if __name__ == '__main__':
     model = create_net()
 
     batch_size = int(os.getenv('BATCH', 4))
-    print(f"batch_size is {batch_size}")
     if use_dynamicset:
-      dl = dataset.load(dataset.DynamicSet(batch_size*100), batch_size=batch_size)
+      workers_settings = {
+        "num_workers": 6,
+        "persistent_workers": True,
+        "pin_memory": True
+      } if str(device) == 'cuda' else {}
+      print(workers_settings)
+      dl = dataset.load(
+        dataset.DynamicSet(batch_size*100),
+        batch_size=batch_size,
+        **workers_settings)
     else:
       dl = cropset.load(cropset.CropSet().augment(), batch_size=batch_size)
     print('dataset length', len(dl.dataset))

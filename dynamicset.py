@@ -98,11 +98,11 @@ class DynamicSetPaste(DynamicSet):
 def collate_fn(batch):
   return tuple(zip(*batch))
 
-def load(dataset, batch_size):
+def load(dataset, **kwargs):
   return DataLoader(
     dataset,
-    #num_workers=8, persistent_workers=True,
-    batch_size=batch_size, collate_fn=collate_fn)
+    collate_fn=collate_fn,
+    **kwargs)
 
 
 if __name__ == "__main__":
