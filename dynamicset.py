@@ -60,12 +60,14 @@ class DynamicSet(Dataset):
       v2.ToDtype(torch.float32, scale=True),
       v2.Resize(60),
       v2.CenterCrop(50),
-      v2.RandomResizedCrop(50, scale=(.4, 1.)),
       v2.RandomResize(20, 50),
-      v2.RandomHorizontalFlip(p=.5),
-      v2.RandomApply([v2.RandomPosterize(2)]),
-      v2.RandomApply([v2.GaussianBlur(7)]),
-      v2.RandomApply([v2.RandomRotation(180)], p=.3),
+      v2.RandomApply([
+        v2.RandomResizedCrop(50, scale=(.4, 1.)),
+        v2.RandomHorizontalFlip(p=.5),
+        v2.RandomApply([v2.RandomPosterize(2)]),
+        v2.RandomApply([v2.GaussianBlur(7)]),
+        v2.RandomApply([v2.RandomRotation(180)], p=.3),
+      ], p=.3),
       v2.ToPILImage(),
     ])
 
