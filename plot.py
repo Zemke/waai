@@ -15,15 +15,28 @@ plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
 y = []
 G = L = None
+read = 0
 while True:
-  f = open('train.log', 'r').read().replace("\n",'')
-  for line in re.findall('{.+?}', f):
-    if 'classifier' not in line:
-      continue
-    l = re.sub("device.+?',", '', line)
-    if l not in y:
-      print('plt', l)
-      y.append(l)
+  y_bef = len(y)
+  with open('train.log', 'r') as f:
+    buff = ''
+    for i,line in enumerate(f):
+      if i < read:
+        continue
+      read += 1
+      buff += line.replace("\n",'')
+      fa = re.findall('{.+?}', buff)
+      if len(fa) > 0:
+        for fa1 in fa:
+          if 'classifier' not in fa1:
+            continue
+          l = re.sub("device.+?',", '', fa1)
+          print('plt', l)
+          y.append(l)
+          new = True
+        buff = ''
+  if y_bef == len(y):
+    continue
   if len(y) < 1:
     continue
   z = [[float(n) for n in re.sub("[^0-9.]+", ",", y1).replace(",0,", ",")[1:-1].split(",")] for y1 in y]
