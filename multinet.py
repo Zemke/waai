@@ -42,6 +42,7 @@ class MultiNet(nn.Module):
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.features(x)
     x = torch.flatten(x, 1)  # flatten all dimensions except batch
+    x = nn.BatchNorm1d(x)
     x = self.classifier(x)
     return x
 
