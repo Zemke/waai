@@ -16,16 +16,17 @@ plt.gca().yaxis.set_major_locator(plt.NullLocator())
 y = []
 G = L = None
 while True:
-  with open('train.log', 'r') as f:
-    for line in f.read().splitlines():
-      if re.match("^[0-9]+ ", line) is None:
-        continue
-      if line not in y:
-        print('plt', line)
-        y.append(line)
+  f = open('train.log', 'r').read().replace("\n",'')
+  for line in re.findall('{.+?}', f):
+    if 'classifier' not in line:
+      continue
+    l = re.sub("device.+?',", '', line)
+    if l not in y:
+      print('plt', l)
+      y.append(l)
   if len(y) < 1:
     continue
-  z = [[float(n) for n in re.sub("[^0-9.]+", ",", re.sub('^[0-9]+ ', '', y1)).replace(",0,", ",")[1:-1].split(",")] for y1 in y]
+  z = [[float(n) for n in re.sub("[^0-9.]+", ",", y1).replace(",0,", ",")[1:-1].split(",")] for y1 in y]
   zt = np.transpose(z)
   labels = re.findall("'(.*?)'", y[0])
   if G is None:
