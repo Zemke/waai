@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+from collections import deque
 
 def moving_average(x, w):
   return np.convolve(x, np.ones(w), 'valid') / w
@@ -13,7 +14,7 @@ plt.margins(0,0)
 plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
-y = []
+y = deque([], 500)
 G = L = None
 read = 0
 while True:
