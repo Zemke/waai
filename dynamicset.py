@@ -25,7 +25,7 @@ CLASSES_WEAPONS = [
   "missile",
   "pigeon",
   "jetpack",
-  "cow",  # TODO cow is transparent in current dataset
+  "cow",
   "mole",
   "oldwoman",
   "chute",
