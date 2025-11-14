@@ -135,6 +135,18 @@ def load(dataset, batch_size, pin_memory=False):
     collate_fn=collate_fn)
 
 
+class DynamicOverfitSet(DynamicSet):
+
+  def __init__(self, length):
+    super().__init__(length)
+    self.D = [None] * length
+
+  def __getitem__(self, idx):
+    if self.D[idx] is None:
+      self.D[idx] = super().__getitem__(idx)
+    return self.D[idx][0], self.D[idx][1]
+
+
 if __name__ == "__main__":
   if sys.argv[1] == 'norm':
     batch_size = 10_000
