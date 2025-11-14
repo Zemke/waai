@@ -125,7 +125,9 @@ def collate_fn(batch):
   return tuple(zip(*batch))
 
 def load(dataset, batch_size, pin_memory=False):
-  workers = dict(num_workers=4, persistent_workers=True)
+  workers = dict(num_workers=4, persistent_workers=True) \
+    if os.getenv('WORKERS', '1') != '0' \
+    else dict()
   print('workers', workers)
   return DataLoader(
     dataset,
