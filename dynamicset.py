@@ -146,6 +146,7 @@ class DynamicOverfitSet(DynamicSet):
   def __getitem__(self, idx):
     if self.D[idx] is None:
       self.D[idx] = super().__getitem__(idx)
+      v2.ToPILImage()(self.D[idx][0]).save('overfit/' + str(idx) + '.png')
     return self.D[idx][0], self.D[idx][1]
 
 
