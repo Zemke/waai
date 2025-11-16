@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 def moving_average(x, w):
   return np.convolve(x, np.ones(w), 'valid') / w
 
-plt.ion()
+ion = os.getenv("ION", 1) != '0'
+if ion:
+  plt.ion()
 plt.style.use('dark_background')
 plt.gca().set_axis_off()
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
@@ -58,5 +60,9 @@ while True:
   if L is not None:
     L.remove()
   L = plt.legend([g for g, in G], labels)
-  plt.pause(2)
+  if ion:
+    plt.pause(2)
+  else:
+    plt.show()
+    break
 
