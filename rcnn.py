@@ -79,7 +79,7 @@ def train(model):
   lr_scheduler = torch.optim.lr_scheduler.StepLR(
     optimizer,
     step_size=epochs//4,
-    gamma=0.004/.007,
+    gamma=0.006/.008,
   )
 
   mlosses = []
