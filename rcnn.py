@@ -67,7 +67,7 @@ def pretrained(path):
 
 def train(model):
   params = [p for p in model.parameters() if p.requires_grad]
-  optimizer = torch.optim.SGD(params, lr=.005, momentum=0.9, weight_decay=0.0005)
+  optimizer = torch.optim.SGD(params, lr=.008, momentum=0.9, weight_decay=0.0005)
 
   model.to(device)
   model.train()
@@ -75,6 +75,12 @@ def train(model):
   STEP = 2
   epochs = int(os.getenv('EPOCHS', 200))
   print(f'training {epochs} epochs')
+
+  lr_scheduler = torch.optim.lr_scheduler.StepLR(
+    optimizer,
+    step_size=epochs//4,
+    gamma=0.004/.007,
+  )
 
   mlosses = []
   mn_loss = None
@@ -106,8 +112,9 @@ def train(model):
         log = True
       if log:
         mlosses.append(r_loss/divisor)
-        progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f}")
+        progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f} lr:{lr_scheduler.get_last_lr()}")
         r_loss = 0.
+    lr_scheduler.step()
     if mn_loss is None or mlosses[-1] < mn_loss:
       torch.save(model.state_dict(), "./ubernet.pt")
       mn_loss = mlosses[-1]
