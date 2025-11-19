@@ -2,7 +2,6 @@
 
 import os
 import sys
-from time import sleep
 
 import torch
 from torchvision.ops import MultiScaleRoIAlign
@@ -79,16 +78,12 @@ def train(model):
   lr_scheduler = torch.optim.lr_scheduler.StepLR(
     optimizer,
     step_size=epochs//4,
-    gamma=0.006/.008,
+    gamma=.7,
   )
 
   mlosses = []
   mn_loss = None
   for epoch in trange(epochs, position=1, disable=not enable_progr):
-    if (epoch+1) % 100 == 0:
-      print("relax")
-      sleep(10)  # GPU relaxation time
-
     r_loss = 0.
     for i, (img, l) in enumerate((progr := tqdm(dl, position=0, disable=not enable_progr))):
       img = list(i.to(device) for i in img)
