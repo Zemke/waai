@@ -56,7 +56,7 @@ while True:
   for i,l in enumerate(labels):
     if G[i] is not None:
       G[i][0].remove()
-    G[i] = plt.plot(moving_average(zt[i], max([int(len(y)*(os.getenv("MA", 1/40))), 1])), label=l, color=colors[i])
+    G[i] = plt.plot(moving_average(zt[i], max([int(len(y)*(float(os.getenv("MA", .025)))), 1])), label=l, color=colors[i])
   if L is not None:
     L.remove()
   L = plt.legend([g for g, in G], labels)
