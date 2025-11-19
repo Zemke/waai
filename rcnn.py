@@ -66,7 +66,7 @@ def pretrained(path):
 
 def train(model):
   params = [p for p in model.parameters() if p.requires_grad]
-  optimizer = torch.optim.SGD(params, lr=.008, momentum=0.9, weight_decay=0.0005)
+  optimizer = torch.optim.SGD(params, lr=.01, momentum=0.9, weight_decay=0.0005)
 
   model.to(device)
   model.train()
@@ -78,7 +78,7 @@ def train(model):
   lr_scheduler = torch.optim.lr_scheduler.StepLR(
     optimizer,
     step_size=epochs//4,
-    gamma=.7,
+    gamma=.6,
   )
 
   mlosses = []
