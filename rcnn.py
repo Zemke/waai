@@ -46,7 +46,7 @@ def create_net():
   num_classes = net.classifier[-1].out_features
   print('num_classes', num_classes)
 
-  anchor_generator = AnchorGenerator(sizes=((15,30,45,50,),), aspect_ratios=((1.,),))
+  anchor_generator = AnchorGenerator(sizes=((20,30,40,50,),), aspect_ratios=((1.,),))
   roi_pooler = MultiScaleRoIAlign(featmap_names=['0'], output_size=30, sampling_ratio=1)
 
   return FasterRCNN(
