@@ -135,6 +135,18 @@ class DynamicOverfitSet(DynamicSet):
     return self.D[idx][0], self.D[idx][1]
 
 
+class DynamicRandSet(DynamicSet):
+
+  def __init__(self, length):
+    super().__init__(length)
+
+  def __getitem__(self, idx):
+    return torch.randn((3, 696, 1920)), {
+      'labels': torch.randint(0, len(CLASSES), (133,)).to(torch.int64),
+      'boxes': torch.tensor([1,2,3,4]).repeat(133,1).to(torch.float)
+    }
+
+
 def collate_fn(batch):
   return tuple(zip(*batch))
 
