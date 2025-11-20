@@ -164,8 +164,10 @@ if __name__ == "__main__":
     boxes = bl["boxes"]
     labels = bl["labels"]
     denorm = (transed*255).to(torch.uint8)
-    bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
-    F.to_pil_image(bb).show()
+    if os.getenv("BB") != "0":
+      bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
+      denorm = bb
+    F.to_pil_image(denorm).show()
   elif sys.argv[1] == "smol":
     from torchvision.utils import make_grid
     import torchvision.transforms.functional as F
