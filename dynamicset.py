@@ -58,16 +58,17 @@ class DynamicSet(Dataset):
     self.transform_paste = T.Compose([
       T.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
+      # box fitting
       v2.Resize(60),
       v2.CenterCrop(50),
+      # zoom and crop size
+      v2.RandomResizedCrop(50, scale=(.4, 1.)),
       v2.RandomResize(20, 50),
-      v2.RandomApply([
-        v2.RandomResizedCrop(50, scale=(.4, 1.)),
-        v2.RandomHorizontalFlip(p=.5),
-        v2.RandomApply([v2.RandomPosterize(2)]),
-        v2.RandomApply([v2.GaussianBlur(7)]),
-        v2.RandomApply([v2.RandomRotation(180)], p=.3),
-      ], p=.3),
+      # augmentation
+      v2.RandomHorizontalFlip(),
+      v2.RandomApply([v2.RandomPosterize(2)], p=.3),
+      v2.RandomApply([v2.GaussianBlur(7)], p=.3),
+      v2.RandomApply([v2.RandomRotation(180)], p=.3),
       v2.ToPILImage(),
     ])
 
