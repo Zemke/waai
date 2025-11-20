@@ -122,6 +122,19 @@ class DynamicSetPaste(DynamicSet):
       torch.as_tensor(c, dtype=torch.int64)
 
 
+class DynamicOverfitSet(DynamicSet):
+
+  def __init__(self, length):
+    super().__init__(length)
+    self.D = [None] * length
+
+  def __getitem__(self, idx):
+    if self.D[idx] is None:
+      self.D[idx] = super().__getitem__(idx)
+      v2.ToPILImage()(self.D[idx][0]).save('overfit/' + str(idx) + '.png')
+    return self.D[idx][0], self.D[idx][1]
+
+
 def collate_fn(batch):
   return tuple(zip(*batch))
 
@@ -137,19 +150,6 @@ def load(dataset, batch_size, pin_memory=False):
     **workers,
     batch_size=batch_size,
     collate_fn=collate_fn)
-
-
-class DynamicOverfitSet(DynamicSet):
-
-  def __init__(self, length):
-    super().__init__(length)
-    self.D = [None] * length
-
-  def __getitem__(self, idx):
-    if self.D[idx] is None:
-      self.D[idx] = super().__getitem__(idx)
-      v2.ToPILImage()(self.D[idx][0]).save('overfit/' + str(idx) + '.png')
-    return self.D[idx][0], self.D[idx][1]
 
 
 if __name__ == "__main__":
