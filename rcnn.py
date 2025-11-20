@@ -151,9 +151,13 @@ def plot_infer(y, img, thres):
   plt.show()
 
 
-def output_img(y, img, thres, dest):
+def output_img(y, img, thres, dest=None):
   img = Image.fromarray(draw_bb(y, img, thres))
-  return img.save(dest)
+  if dest is None:
+    img.show()
+  else:
+    img.save(dest)
+  return img
 
 
 def write_createml(targ_name, y, thres):
@@ -222,7 +226,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:  # infer single
       img = Image.open(sys.argv[2]).convert('RGB')
       y = infer(img, model)
-      plot_infer(y, img, thres)
+      output_img(y, img, thres)
     else:  # mass infer
       paths = sys.argv[2:]
       output_dir = None
