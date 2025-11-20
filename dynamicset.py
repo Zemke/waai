@@ -6,7 +6,7 @@ from os import listdir
 from os.path import isfile, join
 from random import randrange
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageFile
 import numpy as np
 
 import torch
@@ -15,6 +15,8 @@ import torchvision.transforms as T
 from torchvision.transforms import v2
 
 import norm
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 CLASSES_WEAPONS = [
   "mine",
