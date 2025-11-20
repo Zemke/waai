@@ -134,6 +134,8 @@ def infer(img, model):
 def draw_bb(y, img, thres):
   topk = y['scores'] > thres
   labels = [dataset.CLASSES[i] for i in y['labels'][topk]]
+  from pprint import pprint
+  pprint({dataset.CLASSES[c]: y['scores'][torch.where(y['labels'] == c)] for c in range(len(dataset.CLASSES))})
   bb = draw_bounding_boxes(
     (F.to_tensor(img)*255).to(torch.uint8),
     boxes=y['boxes'][topk],
