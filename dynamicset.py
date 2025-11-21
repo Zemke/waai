@@ -139,15 +139,13 @@ class DynamicOverfitSet(DynamicSet):
 
 class DynamicMemSet(DynamicSet):
 
-  def __init__(self):
-    self.I = [Image.open(join("dfs", f)) for f in sorted(listdir("dfs")) if isfile(join("dfs", f)) and f.split(".")[-1] == "png"]
-    print([join("dfs", f) for f in sorted(listdir("dfs"), key=lambda x: int(x.split(".")[0]) if isfile(join("dfs", f)) and f.split(".")[-1] == "png"])
-    self.Y = torch.load('dfs.pt')
-    assert len(self.I) == len(self.Y)
-    super().__init__(len(self.I))
+  def __init__(self, length=10_000):
+    super().__init__(length)
+    self.Y = torch.load('dfs/dfs.pt')
+    assert length <= len(self.Y)
 
   def __getitem__(self, idx):
-    return self.transform(self.I[idx]), self.Y[idx]
+    return self.transform(Image.open(f"dfs/{idx}.png")), self.Y[idx]
 
 
 class DynamicRandSet(DynamicSet):
