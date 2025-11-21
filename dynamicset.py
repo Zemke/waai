@@ -204,4 +204,17 @@ if __name__ == "__main__":
   elif sys.argv[1] == "memgen":
     ds = DynamicOverfitSet(10_000)
     torch.save([y for _, y in ds], 'dfs.pt')
+  elif sys.argv[1] == "memshow":
+    from torchvision.utils import draw_bounding_boxes
+    import torchvision.transforms.functional as F
+    ds = DynamicMemSet()
+    for i in range(0, len(ds), (len(ds)-2)//10):
+      print(i)
+      img, y = ds[i]
+      boxes = y["boxes"]
+      labels = y["labels"]
+      denorm = (img*255).to(torch.uint8)
+      bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
+      denorm = bb
+      F.to_pil_image(denorm).show()
 
