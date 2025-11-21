@@ -137,6 +137,19 @@ class DynamicOverfitSet(DynamicSet):
     return self.D[idx][0], self.D[idx][1]
 
 
+class DynamicMemSet(DynamicSet):
+
+  def __init__(self):
+    self.I = [Image.open(join("dfs", f)) for f in sorted(listdir("dfs")) if isfile(join("dfs", f)) and f.split(".")[-1] == "png"]
+    print([join("dfs", f) for f in sorted(listdir("dfs"), key=lambda x: int(x.split(".")[0]) if isfile(join("dfs", f)) and f.split(".")[-1] == "png"])
+    self.Y = torch.load('dfs.pt')
+    assert len(self.I) == len(self.Y)
+    super().__init__(len(self.I))
+
+  def __getitem__(self, idx):
+    return self.transform(self.I[idx]), self.Y[idx]
+
+
 class DynamicRandSet(DynamicSet):
 
   def __init__(self, length):
@@ -190,4 +203,7 @@ if __name__ == "__main__":
     dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
     x = F.normalize(next(iter(dl))[0], MEAN, STD)
     F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
+  elif sys.argv[1] == "memgen":
+    ds = DynamicOverfitSet(10_000)
+    torch.save([y for _, y in ds], 'dfs.pt')
 
