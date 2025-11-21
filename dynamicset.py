@@ -138,11 +138,14 @@ class DynamicOverfitSet(DynamicSet):
 
 
 class DynamicMemSet(DynamicSet):
+  MAX_LENGTH=10_000
 
-  def __init__(self, length=10_000):
+  def __init__(self, length=None):
+    length = self.MAX_LENGTH if length is None else length
     super().__init__(length)
-    self.Y = torch.load('dfs/dfs.pt')
-    assert length <= len(self.Y)
+    assert length <= self.MAX_LENGTH
+    print(length)
+    self.Y = torch.load('dfs/dfs.pt')[:length]
 
   def __getitem__(self, idx):
     return self.transform(Image.open(f"dfs/{idx}.png")), self.Y[idx]
