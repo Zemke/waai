@@ -5,7 +5,7 @@ import sys
 
 import torch
 from torchvision.ops import MultiScaleRoIAlign
-from torchvision.models.detection import FasterRCNN
+from torchvision.models.detection import FasterRCNN, fasterrcnn_mobilenet_v3_large_fpn
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.utils import draw_bounding_boxes
@@ -39,8 +39,16 @@ device = torch.device(
 def create_net():
   if (bb_path := os.getenv("BACKBONE")):
     net = multinet.pretrained(bb_path)
+  elif os.getenv("NET", 'multinet') == 'mobilenet':
+    print('fasterrcnn_mobilenet_v3_large_fpn')
+    return fasterrcnn_mobilenet_v3_large_fpn(
+      num_classes=len(dataset.CLASSES),
+      image_mean=dataset.MEAN, image_std=dataset.STD,
+      min_size=640, max_size=1920,
+      box_detections_per_img=200)
   else:
     net = multinet.MultiNet(len(dataset.CLASSES))
+
   backbone = net.features
   backbone.out_channels = 20
   num_classes = net.classifier[-1].out_features
@@ -201,7 +209,7 @@ if __name__ == '__main__':
     print(f"batch_size is {batch_size}")
     if use_dynamicset:
       dl = dataset.load(
-        dataset.DynamicSet(batch_size*100),
+        dataset.DynamicMemSet(batch_size),
         batch_size=batch_size,
         pin_memory=str(device) == "cuda")
     else:
