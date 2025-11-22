@@ -139,7 +139,8 @@ def draw_bb(y, img, thres):
   bb = draw_bounding_boxes(
     (F.to_tensor(img)*255).to(torch.uint8),
     boxes=y['boxes'][topk],
-    labels=labels)
+    labels=labels,
+    colors='cyan')
   return bb.permute(1,2,0).detach().numpy()
 
 def plot_infer(y, img, thres):

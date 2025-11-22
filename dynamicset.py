@@ -193,7 +193,8 @@ if __name__ == "__main__":
     labels = bl["labels"]
     denorm = (transed*255).to(torch.uint8)
     if os.getenv("BB") != "0":
-      bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
+      bb = draw_bounding_boxes(
+        denorm, boxes, [CLASSES[l] for l in labels], colors='cyan')
       denorm = bb
     F.to_pil_image(denorm).show()
   elif sys.argv[1] == "smol":
@@ -217,7 +218,8 @@ if __name__ == "__main__":
       boxes = y["boxes"]
       labels = y["labels"]
       denorm = (img*255).to(torch.uint8)
-      bb = draw_bounding_boxes(denorm, boxes, [CLASSES[l] for l in labels])
+      bb = draw_bounding_boxes(
+        denorm, boxes, [CLASSES[l] for l in labels], colors='cyan')
       denorm = bb
       F.to_pil_image(denorm).show()
 
