@@ -115,7 +115,10 @@ def train(model):
         log = True
       if log:
         mlosses.append(r_loss/divisor)
-        progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f} lr:{lr_scheduler.get_last_lr()}")
+        if enable_progr:
+          progr.set_description(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f} lr:{lr_scheduler.get_last_lr()}")
+        else:
+          print(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f} lr:{lr_scheduler.get_last_lr()}")
         r_loss = 0.
     lr_scheduler.step()
     if mn_loss is None or mlosses[-1] < mn_loss:
