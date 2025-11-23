@@ -207,9 +207,11 @@ if __name__ == '__main__':
 
     batch_size = int(os.getenv('BATCH', 4))
     print(f"batch_size is {batch_size}")
+    memlen = os.getenv("MEM", 10_000)
+    print('memlen', memlen)
     if use_dynamicset:
       dl = dataset.load(
-        dataset.DynamicMemSet(batch_size),
+        dataset.DynamicMemSet(memlen - (memlen % batch_size)),
         batch_size=batch_size,
         pin_memory=str(device) == "cuda")
     else:
