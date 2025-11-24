@@ -22,23 +22,23 @@ CLASSES_WEAPONS = [
   "mine",
   "barrel",
   "dynamite",
-  "grenade",
-  "hhg",
-  "missile",
-  "pigeon",
+  #"grenade",
+  #"hhg",
+  #"missile",
+  #"pigeon",
   "jetpack",
-  "cow",
-  "mole",
-  "oldwoman",
-  "chute",
-  "petrol",
-  "drill",
-  "select",
-  "sheep",
-  "skunk",
-  "surrender",
-  "teleport",
-  "airstrike",
+  #"cow",
+  #"mole",
+  #"oldwoman",
+  #"chute",
+  #"petrol",
+  #"drill",
+  #"select",
+  #"sheep",
+  #"skunk",
+  #"surrender",
+  #"teleport",
+  #"airstrike",
 ]
 CLASSES_OTHER = ['bg', 'worm']
 CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
@@ -60,18 +60,7 @@ class DynamicSet(Dataset):
     self.transform_paste = T.Compose([
       T.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
-      # box fitting
-      v2.Resize(60),
-      v2.CenterCrop(50),
-      # zoom and crop size
-      v2.RandomResizedCrop(50, scale=(.4, 1.)),
-      v2.RandomResize(20, 50),
-      # augmentation
       v2.RandomHorizontalFlip(),
-      v2.RandomApply([v2.RandomPosterize(2)], p=.3),
-      v2.RandomApply([v2.GaussianBlur(7)], p=.3),
-      v2.RandomApply([v2.RandomRotation(180)], p=.3),
-      v2.ToPILImage(),
     ])
 
   def _get_img(self):
@@ -90,7 +79,31 @@ class DynamicSet(Dataset):
     for y in range(0, height, SP):
       for x in range(0, width, SP):
         im2, c = self._get_img()
-        im2 = self.transform_paste(im2)
+        custom_transforms = []
+        if c == CLASSES.index('mine'):
+          custom_transforms.append(v2.RandomRotation(180, expand=True))
+        elif c == CLASSES.index('barrel'):
+          custom_transforms.append(
+            v2.RandomChoice([
+              v2.Resize((36, 24)),
+              v2.Resize((33, 27)),
+              v2.Resize(25),
+              v2.Resize((30, 30)),
+            ])
+          )
+        im2 = T.Compose([
+          *self.transform_paste.transforms,
+          v2.Resize(({
+            'mine': 8,
+            'dynamite': 8,
+            'barrel': 24,
+            'worm': 22,
+            'jetpack': 13,
+            'barrel': 30,
+          })[CLASSES[c]]),
+          *custom_transforms,
+          v2.ToPILImage(),
+        ])(im2)
         x1 = x + randrange(RND)
         y1 = y + randrange(RND)
         x2 = x1 + im2.width
