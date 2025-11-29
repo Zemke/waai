@@ -15,6 +15,7 @@ import torchvision.transforms as T
 from torchvision.transforms import v2
 
 import norm
+from rotate_fit import RandomRotationFit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -81,7 +82,7 @@ class DynamicSet(Dataset):
         im2, c = self._get_img()
         custom_transforms = []
         if c == CLASSES.index('mine'):
-          custom_transforms.append(v2.RandomRotation(180, expand=True))
+          custom_transforms.append(RandomRotationFit(180))
         elif c == CLASSES.index('barrel'):
           custom_transforms.append(
             v2.RandomChoice([
