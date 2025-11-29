@@ -23,7 +23,8 @@ CLASSES_WEAPONS = [
   "mine",
   "barrel",
   "dynamite",
-  #"grenade",
+  "grenade",
+  "cluster",
   #"hhg",
   #"missile",
   #"pigeon",
@@ -81,7 +82,7 @@ class DynamicSet(Dataset):
       for x in range(0, width, SP):
         im2, c = self._get_img()
         custom_transforms = []
-        if c == CLASSES.index('mine'):
+        if c == CLASSES.index('mine') or c == CLASSES.index('grenade') or c == CLASSES.index('cluster'):
           custom_transforms.append(RandomRotationFit(180))
         elif c == CLASSES.index('barrel'):
           custom_transforms.append(
@@ -101,6 +102,8 @@ class DynamicSet(Dataset):
             'worm': 22,
             'jetpack': 13,
             'barrel': 30,
+            'grenade': 14,
+            'cluster': 14,
           })[CLASSES[c]]),
           *custom_transforms,
           v2.ToPILImage(),
