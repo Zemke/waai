@@ -45,12 +45,12 @@ CLASSES_WEAPONS = [
 CLASSES_OTHER = ['bg', 'worm']
 CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
 
-STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)
+STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)  # TODO
 resize_table = {
   'mine': 8,
   'dynamite': 8,
   'barrel': 24,
-  'worm': 22,
+  'worm': 22,  # TODO  worms have different sizes
   'jetpack': 13,
   'barrel': 30,
   'grenade': 14,
