@@ -136,9 +136,16 @@ class DynamicSet(Dataset):
 
   def _get_img(self):
     idx_T = randrange(len(self.T))
-    keys_T = [*self.T.keys()]
-    key_T = keys_T[idx_T]
-    return self.F[idx_T], CLASSES.index(key_T.split("_")[0]), self.T[key_T]
+    key_T = [*self.T.keys()][idx_T]
+    return \
+      v2.Compose([
+        v2.PILToTensor(),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.RandomHorizontalFlip(),
+        *self.T[key_T],
+        v2.ToPILImage(),
+      ])(self.F[idx_T]), \
+      CLASSES.index(key_T.split("_")[0])
 
   def __len__(self):
     return self.length
@@ -151,14 +158,7 @@ class DynamicSet(Dataset):
     SP, RND = 100, 50
     for y in range(0, height, SP):
       for x in range(0, width, SP):
-        paste_img, c, t = self._get_img()
-        paste_img = v2.Compose([
-          v2.PILToTensor(),
-          v2.ToDtype(torch.float32, scale=True),
-          v2.RandomHorizontalFlip(),
-          *t,
-          v2.ToPILImage(),
-        ])(paste_img)
+        paste_img, c = self._get_img()
         x1, y1 = x + randrange(RND), y + randrange(RND)
         x2, y2 = x1 + paste_img.width, y1 + paste_img.height
         if x2 > width or y2 > height:
@@ -172,20 +172,19 @@ class DynamicSet(Dataset):
       "labels": torch.as_tensor(labels, dtype=torch.int64),
     }
 
-class DynamicSetPaste(DynamicSet):
+class DynamicPasteSet(DynamicSet):
   def __init__(self, length):
     super().__init__(length)
     self.HW = 30, 30
     self.transform = v2.Compose([
       v2.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
-      v2.RandomHorizontalFlip(),
       v2.Resize((self.HW[0],self.HW[1])),
       v2.ToDtype(torch.float, scale=True),
     ])
 
   def __getitem__(self, idx):
-    paste_img, c, _ = self._get_img()
+    paste_img, c = self._get_img()
     return \
       self.transform(paste_img.convert("RGB")), \
       torch.as_tensor(c, dtype=torch.int64)
@@ -248,7 +247,7 @@ def load(dataset, batch_size, pin_memory=False):
 if __name__ == "__main__":
   if sys.argv[1] == 'norm':
     batch_size = 10_000
-    dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
+    dl = DataLoader(ds := DynamicPasteSet(batch_size), batch_size=batch_size)
     norm.exec(ds, dl, ds.HW)
   elif sys.argv[1] == "big":
     from torchvision.utils import draw_bounding_boxes
@@ -265,7 +264,10 @@ if __name__ == "__main__":
     from torchvision.utils import make_grid
     from math import sqrt
     batch_size = 256
-    dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
+    dl = DataLoader(ds := DynamicPasteSet(batch_size), batch_size=batch_size)
+    x = next(iter(dl))[0]
+    if os.getenv("NORM") != "0":
+      x = F.normalize(x, MEAN, STD)
     F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
   elif sys.argv[1] == "memgen":
     dl = load(ds := DynamicGenSet(DynamicMemSet.MAX_LENGTH), batch_size=10)
