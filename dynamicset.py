@@ -21,7 +21,8 @@ from rotate_fit import RandomRotationFit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-FG_CLASSES = [
+
+FG_CLASSES = [c for c in [
   "worm",
   "mine",
   "barrel",
@@ -41,7 +42,7 @@ FG_CLASSES = [
   "sheep",
   "skunk",
   "airstrike",
-]
+] if (clz := os.getenv("CLS")) is None or c in clz.split(",")]
 CLASSES = ['bg', *FG_CLASSES]
 STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)
 
@@ -135,8 +136,11 @@ class DynamicSet(Dataset):
     return v2.RandomResize(min_size=size-uncertainty, max_size=size+uncertainty)
 
   def _get_img(self):
-    idx_T = randrange(len(self.T))
-    key_T = [*self.T.keys()][idx_T]
+    while True:
+      idx_T = randrange(len(self.T))
+      key_T = [*self.T.keys()][idx_T]
+      if key_T.split("_")[0] in CLASSES:
+         break
     return \
       v2.Compose([
         v2.PILToTensor(),
