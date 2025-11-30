@@ -46,6 +46,28 @@ CLASSES_OTHER = ['bg', 'worm']
 CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
 
 STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)
+resize_table = {
+  'mine': 8,
+  'dynamite': 8,
+  'barrel': 24,
+  'worm': 22,
+  'jetpack': 13,
+  'barrel': 30,
+  'grenade': 14,
+  'cluster': 14,
+  "hhg": 18,
+  "missile": 28,
+  "pigeon": 18,
+  "cow": 25,
+  "mole": 20,
+  "oldwoman": 25,
+  "chute": 25,
+  "petrol": 8,
+  "select": 20,
+  "sheep": 25,
+  "skunk": 25,
+  "airstrike": 20,
+}
 
 class DynamicSet(Dataset):
   def __init__(self, length):
@@ -104,30 +126,10 @@ class DynamicSet(Dataset):
               v2.Resize((30, 30)),
             ])
           )
+        size = (resize_table)[CLASSES[c]]
         im2 = T.Compose([
           *self.transform_paste.transforms,
-          v2.Resize(({
-            'mine': 8,
-            'dynamite': 8,
-            'barrel': 24,
-            'worm': 22,
-            'jetpack': 13,
-            'barrel': 30,
-            'grenade': 14,
-            'cluster': 14,
-            "hhg": 18,
-            "missile": 28,
-            "pigeon": 18,
-            "cow": 25,
-            "mole": 20,
-            "oldwoman": 25,
-            "chute": 25,
-            "petrol": 8,
-            "select": 20,
-            "sheep": 25,
-            "skunk": 25,
-            "airstrike": 20,
-          })[CLASSES[c]]),
+          v2.RandomResize(size-2,size+2),
           *custom_transforms,
           v2.ToPILImage(),
         ])(im2)
