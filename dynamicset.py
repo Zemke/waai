@@ -3,7 +3,7 @@
 import os
 import sys
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile
 from random import randrange
 
 from PIL import Image, ImageFilter, ImageFile
@@ -13,7 +13,6 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms.functional as F
-import torchvision.transforms as T
 from torchvision.transforms import v2
 
 import norm
@@ -22,7 +21,8 @@ from rotate_fit import RandomRotationFit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-CLASSES_WEAPONS = [
+FG_CLASSES = [
+  "worm",
   "mine",
   "barrel",
   "dynamite",
@@ -34,141 +34,138 @@ CLASSES_WEAPONS = [
   "jetpack",
   "cow",
   "mole",
-  "oldwoman",
+  "granny",
   "chute",
   "petrol",
-  #"drill",
   "select",
   "sheep",
   "skunk",
-  #"surrender",
-  #"teleport",
   "airstrike",
 ]
-CLASSES_OTHER = ['bg', 'worm']
-CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
-
-STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)  # TODO
-resize_table = {
-  'mine': 8,
-  'dynamite': 8,
-  'barrel': 24,
-  'jetpack': 13,
-  'barrel': 30,
-  'grenade': 14,
-  'cluster': 14,
-  "hhg": 18,
-  "missile": 28,
-  "pigeon": 18,
-  "cow": 25,
-  "mole": 20,
-  "oldwoman": 25,
-  "chute": 25,
-  "petrol": 8,
-  "select": 20,
-  "sheep": 25,
-  "skunk": 25,
-  "airstrike": 20,
-}
+CLASSES = ['bg', *FG_CLASSES]
+STD, MEAN = (0.339, 0.298, 0.32), (0.288, 0.238, 0.228)
 
 class DynamicSet(Dataset):
   def __init__(self, length):
     self.length = length;
-    self.transform = T.Compose([
-      T.PILToTensor(),
+    self.transform = v2.Compose([
+      v2.PILToTensor(),
       v2.ToDtype(torch.float32, scale=True),
     ])
-    self.M = [f for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
-    self.W = {c.split("/")[-1]: Image.open(c).convert("RGBA") for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]}
-    self.worms_transforms = {
-      "staring.png": (22, [],),
-      "stepping.png": (22, [],),
-      "sliding.png": (22, [],),
-      "enter2.png": (22, [],),
-      "sick.png": (22, [],),
-      "lookup.png": (22, [],),
-      "hovering.png": (22, [],),
-      "readying.png": (22, [],),
-      "wincing.png": (22, [],),
-      "scratching.png": (22, [],),
-      "lookdown.png": (22, [],),
-      "jetpacking.png": (22, [],),
-      "falling.png": (22, [RandomRotationFit(180)]),
-      "doublebackspace.png": (22, [RandomRotationFit(22)]),
-      "slope.png": (22, [],),
-      "roping.png": (22, [RandomRotationFit(180)]),
-      "default.png": (22, [],),
+    self.M = [Image.open("maps/" + f).convert("RGBA") for f in listdir("maps") if isfile("maps/" + f) and f.split(".")[-1] == "png"]
+    self.T = {
+      "worm_staring": [self._urr(22)],
+      "worm_stepping": [self._urr(22)],
+      "worm_sliding": [self._urr(22)],
+      "worm_enter2": [self._urr(22)],
+      "worm_sick": [self._urr(22)],
+      "worm_lookup": [self._urr(22)],
+      "worm_hovering": [self._urr(22)],
+      "worm_readying": [self._urr(22)],
+      "worm_wincing": [self._urr(22)],
+      "worm_scratching": [self._urr(22)],
+      "worm_lookdown": [self._urr(22)],
+      "worm_jetpacking": [self._urr(22)],
+      "worm_falling": [
+        self._urr(22),
+        RandomRotationFit(180)
+      ],
+      "worm_doublebackspace": [self._urr(22), RandomRotationFit(22)],
+      "worm_slope": [self._urr(22)],
+      "worm_roping": [self._urr(22), RandomRotationFit(180)],
+      "worm_default": [self._urr(22)],
+      'mine': [
+        self._urr(8),
+        RandomRotationFit(180),
+      ],
+      'dynamite': [self._urr(8)],
+      'jetpack': [self._urr(13)],
+      'barrel': [
+        self._urr(30),
+        v2.RandomChoice([
+          v2.Resize((36, 24)),
+          v2.Resize((33, 27)),
+          v2.Resize(25),
+          v2.Resize((30, 30)),
+        ])
+      ],
+      'grenade': [
+        self._urr(14),
+        RandomRotationFit(180)
+      ],
+      'cluster': [
+        self._urr(14),
+        RandomRotationFit(180)
+      ],
+      "hhg": [
+        self._urr(18),
+        RandomRotationFit(180),
+      ],
+      "missile": [
+        self._urr(28),
+        RandomRotationFit(180)
+      ],
+      "pigeon": [self._urr(18)],
+      "cow": [self._urr(25)],
+      "mole": [
+        self._urr(20),
+        RandomRotationFit((-80,35))
+      ],
+      "granny": [self._urr(25)],
+      "chute": [
+        self._urr(25),
+        RandomRotationFit(30)
+      ],
+      "petrol": [
+        self._urr(8),
+        RandomRotationFit(180)
+      ],
+      "select": [
+        self._urr(20),
+        RandomRotationFit(180)
+      ],
+      "sheep": [self._urr(25)],
+      "skunk": [self._urr(25)],
+      "airstrike": [self._urr(20)],
     }
-    self.C = [Image.open(c).convert("RGBA") for t,c in enumerate([
-      f"od/weapons_alpha/{w}.png" for w in CLASSES_WEAPONS
-    ])]
-    self.transform_paste = T.Compose([
-      T.PILToTensor(),
-      v2.ToDtype(torch.float32, scale=True),
-      v2.RandomHorizontalFlip(),
-    ])
+    self.F = [Image.open(f"objects/{f}.png").convert("RGBA") for f in self.T.keys()]
+
+  def _urr(self, size, uncertainty=2):
+    """uncertainty random resize"""
+    return v2.RandomResize(min_size=size-uncertainty, max_size=size+uncertainty)
 
   def _get_img(self):
-    if (c := randrange(len(CLASSES)-1) + 1) == 1:
-      print([*self.W.keys()], [randrange(len(self.W))])
-      return self.W[wc := [*self.W.keys()][randrange(len(self.W))]], c, wc
-    return self.C[c-len(CLASSES_OTHER)], c, None
+    idx_T = randrange(len(self.T))
+    keys_T = [*self.T.keys()]
+    key_T = keys_T[idx_T]
+    return self.F[idx_T], CLASSES.index(key_T.split("_")[0]), self.T[key_T]
 
   def __len__(self):
     return self.length
 
   def __getitem__(self, idx):
-    back_im = Image.open("od/target/" + self.M[randrange(len(self.M))]).convert("RGBA")
+    back_im = self.M[randrange(len(self.M))]
     a = Image.new("RGBA", back_im.size, (0,0,0,0))
     boxes, labels = [], []
     height, width, _ = np.array(back_im).shape
     SP, RND = 100, 50
     for y in range(0, height, SP):
       for x in range(0, width, SP):
-        im2, c, wc = self._get_img()
-        custom_transforms = []
-        if CLASSES[c] in [
-          'mine',
-          'grenade',
-          'cluster',
-          'hhg',
-          'missile',
-          'petrol',
-        ]:
-          custom_transforms.append(RandomRotationFit(180))
-        elif CLASSES[c] == 'chute':
-          custom_transforms.append(RandomRotationFit(30))
-        elif CLASSES[c] == 'mole':
-          custom_transforms.append(RandomRotationFit((-80,35)))
-        elif c == CLASSES.index('barrel'):
-          custom_transforms.append(
-            v2.RandomChoice([
-              v2.Resize((36, 24)),
-              v2.Resize((33, 27)),
-              v2.Resize(25),
-              v2.Resize((30, 30)),
-            ])
-          )
-        if wc is not None:
-          size, worms_transforms = self.worms_transforms[wc]
-          custom_transforms.extend(worms_transforms)
-        else:
-          size = (resize_table)[CLASSES[c]]
-        im2 = T.Compose([
-          *self.transform_paste.transforms,
-          v2.RandomResize(size-2,size+2),
-          *custom_transforms,
+        paste_img, c, t = self._get_img()
+        paste_img = v2.Compose([
+          v2.PILToTensor(),
+          v2.ToDtype(torch.float32, scale=True),
+          v2.RandomHorizontalFlip(),
+          *t,
           v2.ToPILImage(),
-        ])(im2)
-        x1 = x + randrange(RND)
-        y1 = y + randrange(RND)
-        x2 = x1 + im2.width
-        y2 = y1 + im2.height
+        ])(paste_img)
+        x1, y1 = x + randrange(RND), y + randrange(RND)
+        x2, y2 = x1 + paste_img.width, y1 + paste_img.height
         if x2 > width or y2 > height:
           continue
-        a.paste(im2, (x1, y1))
+        a.paste(paste_img, (x1, y1))
         labels.append(c)
-        boxes.append(z := [x1, y1, x2, y2])
+        boxes.append([x1, y1, x2, y2])
     back_im = Image.alpha_composite(back_im, a).convert("RGB")
     return self.transform(back_im), {
       "boxes": torch.as_tensor(boxes, dtype=torch.float),
@@ -179,17 +176,18 @@ class DynamicSetPaste(DynamicSet):
   def __init__(self, length):
     super().__init__(length)
     self.HW = 30, 30
-    self.transform = T.Compose([
-      *self.transform_paste.transforms,
+    self.transform = v2.Compose([
       v2.PILToTensor(),
+      v2.ToDtype(torch.float32, scale=True),
+      v2.RandomHorizontalFlip(),
       v2.Resize((self.HW[0],self.HW[1])),
       v2.ToDtype(torch.float, scale=True),
     ])
 
   def __getitem__(self, idx):
-    im2, c = self._get_img()
+    paste_img, c, _ = self._get_img()
     return \
-      self.transform(im2.convert("RGB")), \
+      self.transform(paste_img.convert("RGB")), \
       torch.as_tensor(c, dtype=torch.int64)
 
 
@@ -211,6 +209,7 @@ class DynamicGenSet(DynamicSet):
 
   def __init__(self, length):
     super().__init__(length)
+    # TODO get std and mean from pastes?
 
   def __getitem__(self, idx):
     img, y = super().__getitem__(idx)
