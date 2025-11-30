@@ -8,14 +8,17 @@ from random import randrange
 
 from PIL import Image, ImageFilter, ImageFile
 import numpy as np
+from tqdm import tqdm
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms.functional as F
 import torchvision.transforms as T
 from torchvision.transforms import v2
 
 import norm
 from rotate_fit import RandomRotationFit
+
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -166,31 +169,18 @@ class DynamicSetPaste(DynamicSet):
       torch.as_tensor(c, dtype=torch.int64)
 
 
-class DynamicOverfitSet(DynamicSet):
-
-  def __init__(self, length):
-    super().__init__(length)
-    self.D = [None] * length
-
-  def __getitem__(self, idx):
-    if self.D[idx] is None:
-      self.D[idx] = super().__getitem__(idx)
-      v2.ToPILImage()(self.D[idx][0]).save('overfit/' + str(idx) + '.png')
-    return self.D[idx][0], self.D[idx][1]
-
-
 class DynamicMemSet(DynamicSet):
-  MAX_LENGTH=10_000
+  MAX_LENGTH = 10_000
 
   def __init__(self, length=None):
     length = self.MAX_LENGTH if length is None else length
     super().__init__(length)
     assert length <= self.MAX_LENGTH
     print(length)
-    self.Y = torch.load('dfs/dfs.pt')[:length]
+    self.Y = torch.load('mem/mem.pt')[:length]
 
   def __getitem__(self, idx):
-    return self.transform(Image.open(f"dfs/{idx}.png")), self.Y[idx]
+    return self.transform(Image.open(f"mem/{idx}.png")), self.Y[idx]
 
 
 class DynamicRandSet(DynamicSet):
@@ -229,7 +219,6 @@ if __name__ == "__main__":
     norm.exec(ds, dl, ds.HW)
   elif sys.argv[1] == "big":
     from torchvision.utils import draw_bounding_boxes
-    import torchvision.transforms.functional as F
     transed, bl = DynamicSet(1)[1]
     boxes = bl["boxes"]
     labels = bl["labels"]
@@ -241,21 +230,28 @@ if __name__ == "__main__":
     F.to_pil_image(denorm).show()
   elif sys.argv[1] == "smol":
     from torchvision.utils import make_grid
-    import torchvision.transforms.functional as F
     from math import sqrt
     batch_size = 256
     dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
-    x = F.normalize(next(iter(dl))[0], MEAN, STD)
     F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
   elif sys.argv[1] == "memgen":
-    ds = DynamicOverfitSet(10_000)
-    torch.save([y for _, y in ds], 'dfs.pt')
+    dl = DataLoader(
+      ds := DynamicSet(DynamicMemSet.MAX_LENGTH),
+      batch_size=100,
+      num_workers=4,
+      persistent_workers=False,
+      collate_fn=collate_fn,
+    )
+    Y = [None] * len(ds)
+    for i, (imgs, y) in enumerate(tqdm(dl)):
+      for i in range(len(imgs)):
+        F.to_pil_image(imgs[i]).save('mem/' + str(i) + '.png')
+        Y[i] = y[i]
+    torch.save(Y, 'mem/mem.pt')
   elif sys.argv[1] == "memshow":
     from torchvision.utils import draw_bounding_boxes
-    import torchvision.transforms.functional as F
     ds = DynamicMemSet()
     for i in range(0, len(ds), (len(ds)-2)//10):
-      print(i)
       img, y = ds[i]
       boxes = y["boxes"]
       labels = y["labels"]
