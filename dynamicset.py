@@ -183,6 +183,16 @@ class DynamicMemSet(DynamicSet):
     return self.transform(Image.open(f"mem/{idx}.png")), self.Y[idx]
 
 
+class DynamicGenSet(DynamicSet):
+
+  def __init__(self, length):
+    super().__init__(length)
+
+  def __getitem__(self, idx):
+    img, y = super().__getitem__(idx)
+    return img, y, idx
+
+
 class DynamicRandSet(DynamicSet):
 
   def __init__(self, length):
@@ -235,18 +245,12 @@ if __name__ == "__main__":
     dl = DataLoader(ds := DynamicSetPaste(batch_size), batch_size=batch_size)
     F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
   elif sys.argv[1] == "memgen":
-    dl = DataLoader(
-      ds := DynamicSet(DynamicMemSet.MAX_LENGTH),
-      batch_size=100,
-      num_workers=4,
-      persistent_workers=False,
-      collate_fn=collate_fn,
-    )
+    dl = load(ds := DynamicGenSet(DynamicMemSet.MAX_LENGTH), batch_size=10)
     Y = [None] * len(ds)
-    for i, (imgs, y) in enumerate(tqdm(dl)):
+    for imgs, y, idx in tqdm(dl):
       for i in range(len(imgs)):
-        F.to_pil_image(imgs[i]).save('mem/' + str(i) + '.png')
-        Y[i] = y[i]
+        F.to_pil_image(imgs[i]).save('mem/' + str(idx[i]) + '.png')
+        Y[idx[i]] = y[i]
     torch.save(Y, 'mem/mem.pt')
   elif sys.argv[1] == "memshow":
     from torchvision.utils import draw_bounding_boxes
