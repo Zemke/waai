@@ -103,8 +103,9 @@ def collate_fn(batch):
   return tuple(zip(*batch))
 
 
-def load(dataset, batch_size=4, shuffle=True):
+def load(dataset, batch_size=4, num_workers=2, shuffle=True):
   return DataLoader(
-      dataset, num_workers=2, persistent_workers=True,
+      dataset,
+      num_workers=num_workers, persistent_workers=num_workers > 0,
       batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn)
 

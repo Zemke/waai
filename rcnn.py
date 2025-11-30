@@ -73,11 +73,15 @@ def pretrained(path):
 
 
 def train(model):
+  dl_test = cropset.load(
+    ds_test := cropset.CropSet(),
+    batch_size=len(ds_test),
+    num_workers=0,
+  )
   params = [p for p in model.parameters() if p.requires_grad]
   optimizer = torch.optim.SGD(params, lr=.01, momentum=0.9, weight_decay=0.0005)
 
   model.to(device)
-  model.train()
 
   STEP = 2
   epochs = int(os.getenv('EPOCHS', 200))
@@ -92,6 +96,7 @@ def train(model):
   mlosses = []
   mn_loss = None
   for epoch in trange(epochs, position=1, disable=not enable_progr):
+    model.train()
     r_loss = 0.
     for i, (img, l) in enumerate((progr := tqdm(dl, position=0, disable=not enable_progr))):
       img = list(i.to(device) for i in img)
@@ -121,12 +126,25 @@ def train(model):
           print(f"epoch:{epoch+1} loss:{mlosses[-1]:.4f} lr:{lr_scheduler.get_last_lr()}")
         r_loss = 0.
     lr_scheduler.step()
+    if os.getenv("TEST") == "1":
+      test(dl_test, model)
     if mn_loss is None or mlosses[-1] < mn_loss:
       torch.save(model.state_dict(), "./ubernet.pt")
       mn_loss = mlosses[-1]
       print(f"ubernet.pt saved at epoch {epoch+1} and loss {mn_loss}")
 
   return mlosses
+
+
+@torch.no_grad()
+def test(dl, model):
+  model.eval()
+  img, l = next(iter(dl))
+  img = list(i.to(device) for i in img)
+  l = [{k: v.to(device) for k, v in t.items()} for t in l]
+  loss_dict = model(img, l)
+  losses = sum(loss for loss in loss_dict.values())
+  print('test loss', losses, loss_dict.values())
 
 
 def plot_loss(losses):
