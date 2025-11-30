@@ -25,22 +25,22 @@ CLASSES_WEAPONS = [
   "dynamite",
   "grenade",
   "cluster",
-  #"hhg",
-  #"missile",
-  #"pigeon",
+  "hhg",
+  "missile",
+  "pigeon",
   "jetpack",
-  #"cow",
-  #"mole",
-  #"oldwoman",
-  #"chute",
-  #"petrol",
+  "cow",
+  "mole",
+  "oldwoman",
+  "chute",
+  "petrol",
   #"drill",
-  #"select",
-  #"sheep",
-  #"skunk",
+  "select",
+  "sheep",
+  "skunk",
   #"surrender",
   #"teleport",
-  #"airstrike",
+  "airstrike",
 ]
 CLASSES_OTHER = ['bg', 'worm']
 CLASSES = [*CLASSES_OTHER, *CLASSES_WEAPONS]
@@ -82,8 +82,19 @@ class DynamicSet(Dataset):
       for x in range(0, width, SP):
         im2, c = self._get_img()
         custom_transforms = []
-        if c == CLASSES.index('mine') or c == CLASSES.index('grenade') or c == CLASSES.index('cluster'):
+        if CLASSES[c] in [
+          'mine',
+          'grenade',
+          'cluster',
+          'hhg',
+          'missile',
+          'petrol',
+        ]:
           custom_transforms.append(RandomRotationFit(180))
+        elif CLASSES[c] == 'chute':
+          custom_transforms.append(RandomRotationFit(30))
+        elif CLASSES[c] == 'mole':
+          custom_transforms.append(RandomRotationFit((-80,35)))
         elif c == CLASSES.index('barrel'):
           custom_transforms.append(
             v2.RandomChoice([
@@ -104,6 +115,18 @@ class DynamicSet(Dataset):
             'barrel': 30,
             'grenade': 14,
             'cluster': 14,
+            "hhg": 18,
+            "missile": 28,
+            "pigeon": 18,
+            "cow": 25,
+            "mole": 20,
+            "oldwoman": 25,
+            "chute": 25,
+            "petrol": 8,
+            "select": 20,
+            "sheep": 25,
+            "skunk": 25,
+            "airstrike": 20,
           })[CLASSES[c]]),
           *custom_transforms,
           v2.ToPILImage(),
