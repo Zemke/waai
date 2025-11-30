@@ -53,7 +53,6 @@ resize_table = {
   'mine': 8,
   'dynamite': 8,
   'barrel': 24,
-  'worm': 22,  # TODO  worms have different sizes
   'jetpack': 13,
   'barrel': 30,
   'grenade': 14,
@@ -80,7 +79,26 @@ class DynamicSet(Dataset):
       v2.ToDtype(torch.float32, scale=True),
     ])
     self.M = [f for f in listdir("od/target") if isfile(join("od/target", f)) and f.split(".")[-1] == "png"]
-    self.W = [Image.open(c).convert("RGBA") for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]]
+    self.W = {c.split("/")[-1]: Image.open(c).convert("RGBA") for c in ['od/worms/' + f for f in listdir("od/worms") if isfile(join("od/worms", f)) and f.split(".")[-1] == "png"]}
+    self.worms_transforms = {
+      "staring.png": (22, [],),
+      "stepping.png": (22, [],),
+      "sliding.png": (22, [],),
+      "enter2.png": (22, [],),
+      "sick.png": (22, [],),
+      "lookup.png": (22, [],),
+      "hovering.png": (22, [],),
+      "readying.png": (22, [],),
+      "wincing.png": (22, [],),
+      "scratching.png": (22, [],),
+      "lookdown.png": (22, [],),
+      "jetpacking.png": (22, [],),
+      "falling.png": (22, [RandomRotationFit(180)]),
+      "doublebackspace.png": (22, [RandomRotationFit(22)]),
+      "slope.png": (22, [],),
+      "roping.png": (22, [RandomRotationFit(180)]),
+      "default.png": (22, [],),
+    }
     self.C = [Image.open(c).convert("RGBA") for t,c in enumerate([
       f"od/weapons_alpha/{w}.png" for w in CLASSES_WEAPONS
     ])]
@@ -91,8 +109,10 @@ class DynamicSet(Dataset):
     ])
 
   def _get_img(self):
-    c = randrange(len(CLASSES)-1) + 1
-    return self.W[randrange(len(self.W))] if c == 1 else self.C[c-len(CLASSES_OTHER)], c
+    if (c := randrange(len(CLASSES)-1) + 1) == 1:
+      print([*self.W.keys()], [randrange(len(self.W))])
+      return self.W[wc := [*self.W.keys()][randrange(len(self.W))]], c, wc
+    return self.C[c-len(CLASSES_OTHER)], c, None
 
   def __len__(self):
     return self.length
@@ -105,7 +125,7 @@ class DynamicSet(Dataset):
     SP, RND = 100, 50
     for y in range(0, height, SP):
       for x in range(0, width, SP):
-        im2, c = self._get_img()
+        im2, c, wc = self._get_img()
         custom_transforms = []
         if CLASSES[c] in [
           'mine',
@@ -129,7 +149,11 @@ class DynamicSet(Dataset):
               v2.Resize((30, 30)),
             ])
           )
-        size = (resize_table)[CLASSES[c]]
+        if wc is not None:
+          size, worms_transforms = self.worms_transforms[wc]
+          custom_transforms.extend(worms_transforms)
+        else:
+          size = (resize_table)[CLASSES[c]]
         im2 = T.Compose([
           *self.transform_paste.transforms,
           v2.RandomResize(size-2,size+2),
