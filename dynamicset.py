@@ -269,6 +269,9 @@ if __name__ == "__main__":
       bb = draw_bounding_boxes(
         denorm, boxes, [CLASSES[l] for l in labels], colors='cyan')
       denorm = bb
+    from pprint import pprint
+    pprint({CLASSES[c]: len(labels[labels == c]) for c in range(len(CLASSES))})
+    print(len(labels))
     F.to_pil_image(denorm).show()
   elif sys.argv[1] == "smol":
     from torchvision.utils import make_grid
