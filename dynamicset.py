@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as F
 from torchvision.transforms import v2
 
@@ -68,15 +69,21 @@ class DynamicSet(Dataset):
       "worm_jetpacking": [self._urr(16)],
       "worm_falling": [
         self._urr(32),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
-      "worm_doublebackspace": [self._urr(28), RandomRotationFit(22)],
+      "worm_doublebackspace": [
+        self._urr(28),
+        RandomRotationFit(22, interpolation=InterpolationMode.BILINEAR)
+      ],
       "worm_slope": [self._urr(20)],
-      "worm_roping": [self._urr(26), RandomRotationFit(180)],
+      "worm_roping": [
+        self._urr(26),
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
+      ],
       "worm_default": [self._urr(28)],
       'mine': [
         self._urr(8),
-        RandomRotationFit(180),
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR),
       ],
       'dynamite': [self._urr(8)],
       'jetpack': [self._urr(13)],
@@ -91,38 +98,38 @@ class DynamicSet(Dataset):
       ],
       'grenade': [
         self._urr(14),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       'cluster': [
         self._urr(14),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "hhg": [
         self._urr(18),
-        RandomRotationFit(180),
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR),
       ],
       "missile": [
         self._urr(28),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "pigeon": [self._urr(18)],
       "cow": [self._urr(25)],
       "mole": [
         self._urr(20),
-        RandomRotationFit((-80,35))
+        RandomRotationFit((-80,35), interpolation=InterpolationMode.BILINEAR)
       ],
       "granny": [self._urr(25)],
       "chute": [
         self._urr(25),
-        RandomRotationFit(30)
+        RandomRotationFit(30, interpolation=InterpolationMode.BILINEAR)
       ],
       "petrol": [
         self._urr(8),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "select": [
         self._urr(20),
-        RandomRotationFit(180)
+        RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "sheep": [self._urr(25)],
       "skunk": [self._urr(25)],
