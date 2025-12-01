@@ -56,16 +56,16 @@ class DynamicSet(Dataset):
     ])
     self.M = [Image.open("maps/" + f).convert("RGBA") for f in listdir("maps") if isfile("maps/" + f) and f.split(".")[-1] == "png"]
     self.T = {
-      "worm_staring": [self._urr(28)],
+      #"worm_staring": [self._urr(28)],
       "worm_stepping": [self._urr(30)],
       "worm_sliding": [self._urr(28)],
-      "worm_enter2": [self._urr(20)],
+      #"worm_enter2": [self._urr(20)],
       "worm_sick": [self._urr(24)],
       "worm_hovering": [self._urr(18)],
       "worm_readying": [self._urr(24)],
       "worm_wincing": [self._urr(25)],
-      "worm_scratching": [self._urr(24)],
-      "worm_lookdown": [self._urr(24)],
+      #"worm_scratching": [self._urr(24)],
+      #"worm_lookdown": [self._urr(24)],
       "worm_jetpacking": [self._urr(18)],
       "worm_falling": [
         self._urr(32),
