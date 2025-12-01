@@ -66,7 +66,7 @@ class DynamicSet(Dataset):
       "worm_wincing": [self._urr(25)],
       "worm_scratching": [self._urr(24)],
       "worm_lookdown": [self._urr(24)],
-      "worm_jetpacking": [self._urr(16)],
+      "worm_jetpacking": [self._urr(18)],
       "worm_falling": [
         self._urr(32),
         RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
@@ -128,7 +128,7 @@ class DynamicSet(Dataset):
         RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "select": [
-        self._urr(20),
+        self._urr(24),
         RandomRotationFit(180, interpolation=InterpolationMode.BILINEAR)
       ],
       "sheep": [self._urr(25)],
