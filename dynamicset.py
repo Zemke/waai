@@ -142,18 +142,19 @@ class DynamicSet(Dataset):
     return v2.RandomResize(min_size=size-uncertainty, max_size=size+uncertainty)
 
   def _get_img(self):
-    # make sure worm class is as likely as any other
-    num_of_worms = len([t for t in self.T.keys() if t.split("_")[0] == "worm"])
-    start, end = \
-      (0, num_of_worms) \
-      if randrange(len(self.T) - num_of_worms + 1) == 0 \
-      else (num_of_worms, len(self.T))
     # only use class that hasn't been filtered out
-    while True:
-      idx_T = randrange(start, end)
-      key_T = [*self.T.keys()][idx_T]
-      if key_T.split("_")[0] in CLASSES:
-         break
+    av = [k for k in self.T.keys() if k.split("_")[0] in CLASSES]
+    # make sure worm class is as likely as any other
+    if "worm" in CLASSES:
+      num_of_worms = len([t for t in av if t.split("_")[0] == "worm"])
+      start, end = \
+        (0, num_of_worms) \
+        if randrange(len(av) - num_of_worms + 1) == 0 \
+        else (num_of_worms, len(av))
+    else:
+      start, end = 0, len(av)
+    idx_T = [*self.T.keys()].index(av[randrange(start, end)])
+    key_T = [*self.T.keys()][idx_T]
     return \
       v2.Compose([
         v2.PILToTensor(),
