@@ -14,10 +14,10 @@ class RandomRotationFit(RandomRotation):
 
   def __init__(
     self,
-    degrees: Union[numbers.Number, Sequence],
-    interpolation: Union[InterpolationMode, int] = InterpolationMode.NEAREST,
-    fill: Union[_FillType, dict[Union[type, str], _FillType]] = 0,
-  ) -> None:
+    degrees,
+    interpolation = InterpolationMode.NEAREST,
+    fill  = 0,
+  ):
     super().__init__(
       degrees=degrees,
       interpolation=interpolation,
@@ -26,7 +26,7 @@ class RandomRotationFit(RandomRotation):
       fill=fill
     )
 
-  def transform(self, inpt: Any, params: dict[str, Any]) -> Any:
+  def transform(self, inpt, params):
     if params['angle'] == 0.:
       return inpt
     _, H, W = inpt.shape
