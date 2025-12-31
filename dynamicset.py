@@ -291,7 +291,8 @@ if __name__ == "__main__":
       x = F.normalize(x, MEAN, STD)
     F.to_pil_image(make_grid(x, nrow=int(sqrt(batch_size)))).show()
   elif sys.argv[1] == "memgen":
-    dl = load(ds := DynamicGenSet(DynamicMemSet.MAX_LENGTH), batch_size=10)
+    memlen = int(os.getenv("MEM", DynamicMemSet.MAX_LENGTH))
+    dl = load(ds := DynamicGenSet(memlen), batch_size=10)
     Y = [None] * len(ds)
     for imgs, y, idx in tqdm(dl):
       for i in range(len(imgs)):
