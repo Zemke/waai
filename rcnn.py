@@ -228,7 +228,7 @@ if __name__ == '__main__':
 
     batch_size = int(os.getenv('BATCH', 4))
     print(f"batch_size is {batch_size}")
-    memlen = int(os.getenv("MEM", DynamicMemSet.MAX_LENGTH))
+    memlen = int(os.getenv("MEM", dataset.DynamicMemSet.MAX_LENGTH))
     print('memlen', memlen)
     if use_dynamicset:
       dl = dataset.load(
