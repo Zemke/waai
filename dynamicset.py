@@ -22,6 +22,11 @@ from rotate_fit import RandomRotationFit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+# weapons/utils that reduce ammo
+#  lg, jp, homing, cluster, bow, kami, dyna, mine,
+#  sheep, strike, napalm, torch, drill girder, bat,
+#  rope, bunge, chute, tele, petrol, skunk, select,
+#  cow, hhg, granny, pigeon, mole
 
 FG_CLASSES = [c for c in [
   "worm",
