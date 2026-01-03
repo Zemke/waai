@@ -44,7 +44,7 @@ def create_net():
     return fasterrcnn_mobilenet_v3_large_fpn(
       num_classes=len(dataset.CLASSES),
       image_mean=dataset.MEAN, image_std=dataset.STD,
-      min_size=640, max_size=1920,
+      min_size=1080, max_size=1920,
       box_detections_per_img=200)
   else:
     net = multinet.MultiNet(len(dataset.CLASSES))
