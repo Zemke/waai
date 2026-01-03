@@ -46,7 +46,6 @@ while idx < len(L):
     while 'ends turn' not in L[idx] and 'loses turn' not in L[idx]:
       if 'fires' in L[idx]:
         weap = L[idx][L[idx].index('fires')+len('fires')+1:]
-        print(weap)
         fires.append((gettime(L[idx]), fmtweap(weap)))
       idx += 1
     fires.append((gettime(L[idx+1]), 'end'))
