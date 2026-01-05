@@ -266,6 +266,22 @@ def load(dataset, batch_size, pin_memory=False):
     batch_size=batch_size,
     collate_fn=collate_fn)
 
+def maps():
+  M = {}
+  for f in listdir("maps"):
+    if isfile("maps/" + f) and f.split(".")[-1] == "png":
+      m = f.split("_")[0]
+      if m not in M:
+        M[m] = []
+      M[m].append(f)
+  I = {k: 0 for k in M.keys()}
+  mx = max(len(v) for v in M.values())
+  tot = mx * len(M)
+  for terr in M.keys():
+    for i in range(mx):
+      mp = M[terr][I[terr]]
+      I[terr] = (I[terr]+1) % len(M[terr])
+      yield Image.open("maps/" + mp).convert("RGBA")
 
 if __name__ == "__main__":
   if sys.argv[1] == 'norm':
