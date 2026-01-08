@@ -36,7 +36,7 @@ def run(cmd):
   if os.getenv("DRY") is None:
     subprocess.run(cmd)
   else:
-    print(cmd)
+    print(' '.join(cmd))
 
 sm = 0
 idx = 0
